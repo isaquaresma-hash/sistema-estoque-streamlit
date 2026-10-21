@@ -6,15 +6,8 @@ import base64
 import os
 from datetime import datetime
 import io
-
-# Tenta importar openpyxl para estilização completa do Excel
-try:
-    import openpyxl
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    HAS_OPENPYXL = True
-except ImportError:
-    HAS_OPENPYXL = False
-
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -42,10 +35,9 @@ img_name = "Sistema de Compras e Estoque.png"
 img_base64 = get_base64_of_bin_file(img_name)
 
 # ==========================================
-# ESTILIZAÇÃO CSS (OCULTAR HEADER E FIXAR LOGIN)
+# ESTILIZAÇÃO CSS
 # ==========================================
 css_code = """<style>
-    /* Ocultar o cabeçalho superior nativo do Streamlit */
     header[data-testid="stHeader"] {
         display: none !important;
     }
@@ -60,7 +52,6 @@ css_code = """<style>
         max-width: 1200px !important;
     }
 
-    /* Sidebar */
     [data-testid='stSidebar'] {
         background-color: #FFFFFF !important;
         border-right: 1px solid #D7E3F1;
@@ -69,7 +60,6 @@ css_code = """<style>
         color: #103965 !important;
     }
 
-    /* Container de Login centralizado e expandido */
     .login-container {
         display: flex;
         justify-content: center;
@@ -77,7 +67,6 @@ css_code = """<style>
         margin-top: 2rem;
     }
 
-    /* Cartão de LOGIN expandido */
     .login-container div[data-testid='stForm'] {
         background-color: #FFFFFF !important;
         padding: 2.5rem 2.5rem 2rem 2.5rem !important;
@@ -112,7 +101,6 @@ css_code = """<style>
         font-weight: 500;
     }
 
-    /* Formulários e Cartões Internos Elegantes */
     div[data-testid='stForm'] {
         background-color: #FFFFFF !important;
         border-radius: 16px !important;
@@ -121,7 +109,6 @@ css_code = """<style>
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
     }
 
-    /* Estilização dos Botões de Ação */
     div[data-testid='stForm'] button[kind='secondaryFormSubmit'] {
         background-color: #0D47A1 !important;
         color: #FFFFFF !important;
@@ -193,7 +180,6 @@ if "usuario_logado" not in st.session_state:
 
 def login_screen():
     col1, col2, col3 = st.columns([0.8, 1.4, 0.8])
-    
     with col2:
         st.markdown("<div class='login-container'>", unsafe_allow_html=True)
         with st.form("login_form"):
@@ -210,7 +196,6 @@ def login_screen():
             st.markdown("<br>", unsafe_allow_html=True)
             
             submit_login = st.form_submit_button("➔ Acessar Sistema", use_container_width=True)
-            
             if submit_login:
                 user = verificar_login(username, password)
                 if user:
@@ -223,7 +208,6 @@ def login_screen():
                     st.rerun()
                 else:
                     st.error("Credenciais inválidas. Verifique o usuário e a senha fornecidos.")
-            
             st.markdown("<p class='secure-footer' style='text-align:center; color:#94A3B8; font-size:0.8rem; margin-top:1rem;'>🔒 Acesso seguro</p>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -236,10 +220,9 @@ if not st.session_state["usuario_logado"]:
     st.stop()
 
 # ==========================================
-# INTERFACE PRINCIPAL (SESSÃO AUTENTICADA)
+# INTERFACE PRINCIPAL
 # ==========================================
 user_info = st.session_state["usuario_logado"]
-
 st.sidebar.markdown(f"<div class='user-profile-card'><p style='font-size: 0.95rem; font-weight: 700;'>👤 {user_info['nome']}</p><p style='font-size: 0.8rem; opacity: 0.9;'>Perfil: <b>{user_info['role'].upper()}</b></p></div>", unsafe_allow_html=True)
 
 if st.sidebar.button("🚪 Encerrar Sessão", use_container_width=True):
@@ -255,80 +238,59 @@ if user_info["role"] == "admin":
 menu = st.sidebar.radio("Navegação do Sistema", menu_options)
 
 # ==========================================
-# GERADORES DE EXCEL (EM AZUL) E PDF
+# GERADORES DE ARQUIVOS (EXCEL E PDF)
 # ==========================================
 def gerar_excel_estilizado(df):
-    """Gera o arquivo Excel .xlsx estilizado em Tom Azul Escuro (#0D47A1)"""
+    """Gera uma planilha Excel .xlsx nativa formatada com cabeçalho verde escuro e colunas organizadas."""
     buffer = io.BytesIO()
     
-    # Padronizar nomes das colunas
-    df_export = df.copy()
-    
-    if HAS_OPENPYXL:
-        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-            df_export.to_excel(writer, index=False, sheet_name='Relatório')
-            worksheet = writer.sheets['Relatório']
-            
-            # 1. Estilo do Cabeçalho (Azul Escuro #0D47A1 com Texto Branco em Negrito)
-            header_fill = PatternFill(start_color="0D47A1", end_color="0D47A1", fill_type="solid")
-            header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-            header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-            
-            # Estilos das Células
-            data_font = Font(name="Calibri", size=11)
-            left_alignment = Alignment(horizontal="left", vertical="center")
-            center_alignment = Alignment(horizontal="center", vertical="center")
-            right_alignment = Alignment(horizontal="right", vertical="center")
-            
-            thin_border = Border(
-                bottom=Side(style='thin', color='E0E0E0'),
-                left=Side(style='thin', color='F0F0F0'),
-                right=Side(style='thin', color='F0F0F0')
-            )
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Relatório')
+        worksheet = writer.sheets['Relatório']
+        
+        # Estilos: Cabeçalho Verde Escuro (#003319) com texto branco em negrito
+        header_fill = PatternFill(start_color="003319", end_color="003319", fill_type="solid")
+        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+        header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        
+        # Estilos dos Dados
+        data_font = Font(name="Calibri", size=11)
+        data_alignment = Alignment(horizontal="left", vertical="center")
+        center_alignment = Alignment(horizontal="center", vertical="center")
+        thin_border = Border(bottom=Side(style='thin', color='E0E0E0'))
 
-            # Aplicar no Cabeçalho
-            for col_num in range(1, len(df_export.columns) + 1):
-                cell = worksheet.cell(row=1, column=col_num)
-                cell.fill = header_fill
-                cell.font = header_font
-                cell.alignment = header_alignment
+        # Aplicar estilo no cabeçalho
+        for col_num in range(1, len(df.columns) + 1):
+            cell = worksheet.cell(row=1, column=col_num)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = header_alignment
+            
+        worksheet.row_dimensions[1].height = 26
+
+        # Aplicar estilo nas linhas de dados
+        for row_num in range(2, len(df) + 2):
+            worksheet.row_dimensions[row_num].height = 20
+            for col_num in range(1, len(df.columns) + 1):
+                cell = worksheet.cell(row=row_num, column=col_num)
+                cell.font = data_font
+                cell.border = thin_border
                 
-            worksheet.row_dimensions[1].height = 28
+                # Centralizar colunas numéricas/curtas
+                val = str(cell.value or '')
+                if isinstance(cell.value, (int, float)) or len(val) <= 10:
+                    cell.alignment = center_alignment
+                else:
+                    cell.alignment = data_alignment
 
-            # Aplicar nas Linhas de Dados
-            for row_num in range(2, len(df_export) + 2):
-                worksheet.row_dimensions[row_num].height = 22
-                for col_num in range(1, len(df_export.columns) + 1):
-                    cell = worksheet.cell(row=row_num, column=col_num)
-                    cell.font = data_font
-                    cell.border = thin_border
-                    
-                    val = cell.value
-                    col_name = str(worksheet.cell(row=1, column=col_num).value)
-                    
-                    if isinstance(val, (int, float)):
-                        if 'Preço' in col_name or 'Valor' in col_name:
-                            cell.number_format = 'R$ #,##0.00'
-                            cell.alignment = right_alignment
-                        else:
-                            cell.alignment = center_alignment
-                    elif str(val).isupper() or len(str(val)) <= 10:
-                        cell.alignment = center_alignment
-                    else:
-                        cell.alignment = left_alignment
+        # Ajuste automático da largura das colunas
+        for col in worksheet.columns:
+            max_len = max(len(str(cell.value or '')) for cell in col)
+            col_letter = col[0].column_letter
+            worksheet.column_dimensions[col_letter].width = max(max_len + 5, 14)
 
-            # Ajuste de largura das colunas
-            for col in worksheet.columns:
-                max_len = max(len(str(cell.value or '')) for cell in col)
-                col_letter = col[0].column_letter
-                worksheet.column_dimensions[col_letter].width = max(max_len + 6, 16)
-
-        buffer.seek(0)
-        return buffer.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "relatorio_estoque.xlsx"
-    else:
-        # Fallback para CSV com delimitador ';' e UTF-8 BOM para o Excel abrir em colunas nativas
-        csv_bytes = df_export.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        return csv_bytes, "text/csv", "relatorio_estoque.csv"
+    buffer.seek(0)
+    return buffer.getvalue()
 
 def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
     buffer = io.BytesIO()
@@ -374,7 +336,7 @@ def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
 
     table = Table(table_data, colWidths=[150, 80, 80, 70, 80, 80])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0D47A1')),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#003319')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
@@ -497,24 +459,25 @@ elif menu == "📊 Dashboard & Relatórios":
     st.caption("Comparação periódica de volume de compras e variações de valor.")
     
     with sqlite3.connect(DB_NAME) as conn:
-        df_mov = pd.read_sql_query("SELECT m.id as ID, p.nome as Produto, m.tipo as Tipo, m.quantidade as Quantidade, m.preco_unitario as Preço_Unitario, strftime('%Y-%m', m.data_movimentacao) as Mes_Ano FROM movimentacoes_estoque m JOIN produtos p ON p.id = m.produto_id", conn)
+        df_mov = pd.read_sql_query("SELECT m.id, p.nome as produto, m.tipo, m.quantidade, m.preco_unitario, strftime('%Y-%m', m.data_movimentacao) as mes_ano FROM movimentacoes_estoque m JOIN produtos p ON p.id = m.produto_id", conn)
 
     if df_mov.empty:
         st.info("Ainda não há lançamentos registrados para gerar comparativos.")
     else:
-        meses_disponiveis = sorted(df_mov['Mes_Ano'].unique(), reverse=True)
+        meses_disponiveis = sorted(df_mov['mes_ano'].unique(), reverse=True)
         
         if len(meses_disponiveis) < 2:
             st.warning("São necessários lançamentos em pelo menos dois meses diferentes para montar o comparativo de períodos.")
             st.markdown("### Histórico de Lançamentos:")
             st.dataframe(df_mov, use_container_width=True)
             
-            file_bytes, mime_type, file_name = gerar_excel_estilizado(df_mov)
+            # Permite exportar mesmo com apenas 1 mês cadastrado
+            excel_data_single = gerar_excel_estilizado(df_mov)
             st.download_button(
-                label="📥 Baixar Planilha em Excel (.xlsx)",
-                data=file_bytes,
-                file_name=file_name,
-                mime=mime_type
+                label="📥 Baixar Histórico Geral em Excel (.xlsx)",
+                data=excel_data_single,
+                file_name=f"historico_movimentacoes_{datetime.now().strftime('%Y_%m_%d')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
         else:
             col1, col2 = st.columns(2)
@@ -523,19 +486,14 @@ elif menu == "📊 Dashboard & Relatórios":
             with col2:
                 mes_anterior = st.selectbox("Selecione o Mês Base (Anterior)", meses_disponiveis, index=1 if len(meses_disponiveis) > 1 else 0)
 
-            df_atual = df_mov[df_mov['Mes_Ano'] == mes_atual].groupby('Produto').agg(qtd_atual=('Quantidade', 'sum'), preco_atual=('Preço_Unitario', 'mean')).reset_index()
-            df_ant = df_mov[df_mov['Mes_Ano'] == mes_anterior].groupby('Produto').agg(qtd_ant=('Quantidade', 'sum'), preco_ant=('Preço_Unitario', 'mean')).reset_index()
+            df_atual = df_mov[df_mov['mes_ano'] == mes_atual].groupby('produto').agg(qtd_atual=('quantidade', 'sum'), preco_atual=('preco_unitario', 'mean')).reset_index()
+            df_ant = df_mov[df_mov['mes_ano'] == mes_anterior].groupby('produto').agg(qtd_ant=('quantidade', 'sum'), preco_ant=('preco_unitario', 'mean')).reset_index()
 
-            df_comp = pd.merge(df_atual, df_ant, on='Produto', how='outer').fillna(0)
+            df_comp = pd.merge(df_atual, df_ant, on='produto', how='outer').fillna(0)
             df_comp['Diferença Qtd'] = df_comp['qtd_atual'] - df_comp['qtd_ant']
             df_comp['Diferença Preço'] = df_comp['preco_atual'] - df_comp['preco_ant']
 
-            df_comp.rename(columns={
-                'qtd_ant': f'Qtd ({mes_anterior})', 
-                'qtd_atual': f'Qtd ({mes_atual})', 
-                'preco_ant': f'Preço ({mes_anterior})', 
-                'preco_atual': f'Preço ({mes_atual})'
-            }, inplace=True)
+            df_comp.rename(columns={'produto': 'Produto', 'qtd_ant': f'Qtd ({mes_anterior})', 'qtd_atual': f'Qtd ({mes_atual})', 'preco_ant': f'Preço ({mes_anterior})', 'preco_atual': f'Preço ({mes_atual})'}, inplace=True)
 
             st.subheader("📌 Indicadores de Variação")
             m1, m2, m3 = st.columns(3)
@@ -556,12 +514,12 @@ elif menu == "📊 Dashboard & Relatórios":
             exp_col1, exp_col2 = st.columns(2)
             
             with exp_col1:
-                excel_bytes, mime_type, file_name = gerar_excel_estilizado(df_comp)
+                excel_data = gerar_excel_estilizado(df_comp)
                 st.download_button(
                     label="📊 Baixar Planilha Formatada (.xlsx)",
-                    data=excel_bytes,
+                    data=excel_data,
                     file_name=f"relatorio_estoque_{mes_anterior}_vs_{mes_atual}.xlsx",
-                    mime=mime_type,
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True
                 )
             
