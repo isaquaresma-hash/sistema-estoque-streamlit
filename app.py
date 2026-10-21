@@ -1,3 +1,6 @@
+# ==========================================
+# ESTILIZAÇÃO CSS (CORRIGIDA)
+# ==========================================
 css_code = """<style>
     /* Ocultar o cabeçalho superior nativo do Streamlit */
     header[data-testid="stHeader"] {
@@ -23,39 +26,18 @@ css_code = """<style>
         color: #103965 !important;
     }
 
-    /* LAYOUT DE LOGIN FIXO E CENTRALIZADO */
-    .login-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: #F0F4F9;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 999999;
-        padding: 1rem;
-        box-sizing: border-box;
-    }
-
-    /* LARGURA REDUZIDA DO CARTÃO (380px) */
-    .login-card-wrapper {
-        width: 100%;
-        max-width: 380px;
-    }
-
-    /* CARTÃO DE LOGIN COM PADDING MENOR */
-    .login-card-wrapper div[data-testid='stForm'] {
+    /* Ajuste das colunas centrais no Streamlit para compactar o formulário */
+    [data-testid="column"] div[data-testid="stForm"] {
         background-color: #FFFFFF !important;
         padding: 1.5rem 1.5rem 1.2rem 1.5rem !important;
         border-radius: 16px !important;
         border: 1px solid #E2E8F0 !important;
         box-shadow: 0 10px 25px rgba(0, 33, 113, 0.08) !important;
-        width: 100% !important;
+        max-width: 380px !important;
+        margin: 0 auto !important;
     }
 
-    /* LOGO REDUZIDA (200px) */
+    /* Imagem da logo compacta */
     .login-logo-img {
         max-width: 200px;
         width: 100%;
@@ -79,16 +61,7 @@ css_code = """<style>
         font-weight: 500;
     }
 
-    /* FORMULÁRIOS INTERNOS E CAMPOS */
-    div[data-testid='stForm'] {
-        background-color: #FFFFFF !important;
-        border-radius: 14px !important;
-        border: 1px solid #E2E8F0 !important;
-        padding: 1.2rem !important;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
-    }
-
-    /* BOTÃO DE ACESSO */
+    /* Estilização do Botão de Acesso */
     div[data-testid='stForm'] button[kind='secondaryFormSubmit'] {
         background-color: #0D47A1 !important;
         color: #FFFFFF !important;
@@ -118,3 +91,4 @@ css_code = """<style>
         color: #FFFFFF !important;
     }
 </style>"""
+st.markdown(css_code, unsafe_allow_html=True)
