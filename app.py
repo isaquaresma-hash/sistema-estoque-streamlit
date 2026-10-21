@@ -37,10 +37,10 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
 # ==========================================
-# ESTILIZAÇÃO CSS (LARGURA PROPORCIONAL E CENTRADA)
+# ESTILIZAÇÃO CSS (LAYOUT HORIZONTAL CONTROLADO)
 # ==========================================
 if not st.session_state["usuario_logado"]:
-    # CSS exclusivo da Tela de Login (Cartão Compacto e Centralizado)
+    # CSS exclusivo da Tela de Login (Formato Horizontal Elegante)
     css_code = """<style>
         header[data-testid="stHeader"] {
             display: none !important;
@@ -61,29 +61,29 @@ if not st.session_state["usuario_logado"]:
             justify-content: center !important;
         }
 
-        /* Cartão de Login com tamanho estritamente controlado */
+        /* Cartão de Login Horizontal */
         div[data-testid='stForm'] {
             background-color: #FFFFFF !important;
-            padding: 2.2rem 2rem 1.8rem 2rem !important;
+            padding: 2.2rem 2.5rem 1.8rem 2.5rem !important;
             border-radius: 18px !important;
             border: 1px solid #E2E8F0 !important;
-            box-shadow: 0 10px 30px rgba(0, 33, 113, 0.08) !important;
-            width: 420px !important;
-            max-width: 90vw !important;
+            box-shadow: 0 12px 32px rgba(0, 33, 113, 0.08) !important;
+            width: 620px !important;
+            max-width: 92vw !important;
             margin: auto !important;
         }
 
         .login-logo-img {
-            max-width: 190px !important;
+            max-width: 210px !important;
             width: 100% !important;
             height: auto !important;
             display: block !important;
-            margin: 0 auto 1.2rem auto !important;
+            margin: 0 auto 1rem auto !important;
         }
 
         .login-welcome-title {
             color: #0D1B2A;
-            font-size: 1.35rem;
+            font-size: 1.4rem;
             font-weight: 800;
             margin: 0 0 0.2rem 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -93,7 +93,7 @@ if not st.session_state["usuario_logado"]:
         .login-welcome-sub {
             color: #64748B;
             font-size: 0.88rem;
-            margin-bottom: 1.4rem;
+            margin-bottom: 1.5rem;
             font-weight: 500;
             text-align: center;
         }
@@ -105,7 +105,7 @@ if not st.session_state["usuario_logado"]:
             border-radius: 8px !important;
             border: none !important;
             padding: 0.65rem 1rem !important;
-            margin-top: 0.5rem !important;
+            margin-top: 0.8rem !important;
             width: 100% !important;
         }
 
@@ -229,10 +229,13 @@ def login_screen():
         st.markdown("<p class='login-welcome-title'>Bem-vindo(a)!</p>", unsafe_allow_html=True)
         st.markdown("<p class='login-welcome-sub'>Acesse sua conta para continuar.</p>", unsafe_allow_html=True)
         
-        username = st.text_input("✉️ E-mail ou Usuário", placeholder="usuario@fnp.org.br")
-        password = st.text_input("🔒 Senha", type="password", placeholder="••••••••")
-        st.markdown("<br>", unsafe_allow_html=True)
-        
+        # Disposição horizontal dos campos
+        col1, col2 = st.columns(2)
+        with col1:
+            username = st.text_input("✉️ E-mail ou Usuário", placeholder="usuario@fnp.org.br")
+        with col2:
+            password = st.text_input("🔒 Senha", type="password", placeholder="••••••••")
+            
         submit_login = st.form_submit_button("➔ Acessar Sistema", use_container_width=True)
         
         if submit_login:
