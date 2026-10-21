@@ -32,12 +32,25 @@ def get_base64_of_bin_file(bin_file):
 img_name = "Sistema de Compras e Estoque.png"
 img_base64 = get_base64_of_bin_file(img_name)
 
-# Estilização CSS direcionada exclusivamente para a tela de Login e Fundo Suave pós-login
+# Configuração de estilo: Marca d'água suave no fundo do sistema pós-login
+bg_image_css = ""
+if img_base64:
+    bg_image_css = f"""
+    .main .block-container {{
+        background: url('data:image/png;base64,{img_base64}') no-repeat center center fixed;
+        background-size: 65% auto;
+        border-radius: 16px;
+    }}
+    """
+
 css_code = f"""<style>
     .stApp {{
         background-color: #F4F7FC !important;
     }}
     
+    /* Fundo suave com o logo em tom claro na área de conteúdo */
+    {bg_image_css}
+
     /* Sidebar */
     [data-testid='stSidebar'] {{
         background-color: #FFFFFF !important;
@@ -47,7 +60,7 @@ css_code = f"""<style>
         color: #103965 !important;
     }}
 
-    /* CSS Específico do Cartão de LOGIN (isolado via chave CSS) */
+    /* CSS Específico do Cartão de LOGIN */
     .login-container div[data-testid='stForm'] {{
         background-color: #FFFFFF !important;
         padding: 2.2rem 2rem 1.8rem 2rem !important;
@@ -111,29 +124,13 @@ css_code = f"""<style>
         z-index: 2;
     }}
 
-    /* Estilização para o cabeçalho pós-login com fundo suave da imagem */
-    .app-header-bg {{
-        background: #FFFFFF;
-        padding: 1.5rem;
-        border-radius: 16px;
-        border: 1px solid #E2E8F0;
-        margin-bottom: 1.5rem;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-    }}
-
-    .app-header-logo {{
-        max-width: 320px;
-        opacity: 0.85;
-        height: auto;
-    }}
-
-    /* Reset para formulários do sistema interno (evita bordas azuis cortando dados) */
+    /* Estilização para cartões internos (mantém leitura fácil dos campos) */
     div[data-testid='stForm'] {{
-        background-color: #FFFFFF !important;
+        background-color: rgba(255, 255, 255, 0.92) !important;
         border-radius: 16px !important;
         border: 1px solid #E2E8F0 !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
+        backdrop-filter: blur(4px);
     }}
 
     .user-profile-card {{
@@ -244,10 +241,6 @@ if not st.session_state["usuario_logado"]:
 # INTERFACE PRINCIPAL (SESSÃO AUTENTICADA)
 # ==========================================
 user_info = st.session_state["usuario_logado"]
-
-# Cabeçalho limpo e elegante com o logo em tom suave
-if img_base64:
-    st.markdown(f"<div class='app-header-bg'><img src='data:image/png;base64,{img_base64}' class='app-header-logo' alt='Logo FNP'></div>", unsafe_allow_html=True)
 
 st.sidebar.markdown(f"<div class='user-profile-card'><p style='font-size: 0.95rem; font-weight: 700;'>👤 {user_info['nome']}</p><p style='font-size: 0.8rem; opacity: 0.9;'>Perfil: <b>{user_info['role'].upper()}</b></p></div>", unsafe_allow_html=True)
 
@@ -415,103 +408,3 @@ elif menu == "🔄 Movimentação de Estoque":
             else:
                 conn = sqlite3.connect(DB_NAME)
                 cursor = conn.cursor()
-                
-                cursor.execute("INSERT INTO movimentacoes_estoque (produto_id, tipo, quantidade, preco_unitario) VALUES (?, ?, ?, ?)", (int(prod_info['id']), tipo, quantidade, preco_unitario))
-                
-                nova_qtd = prod_info['quantidade_estoque'] + quantidade if tipo == "ENTRADA" else prod_info['quantidade_estoque'] - quantidade
-                cursor.execute("UPDATE produtos SET quantidade_estoque = ? WHERE id = ?", (nova_qtd, int(prod_info['id'])))
-                
-                conn.commit()
-                conn.close()
-                st.success("Movimentação registrada com sucesso!")
-                st.rerun()
-
-# ==========================================
-# 3. DASHBOARD E RELATÓRIO COMPARATIVO
-# ==========================================
-elif menu == "📊 Dashboard & Relatórios":
-    st.subheader("📊 Painel Comparativo & Exportação PDF")
-    st.caption("Comparação periódica de volume de compras e variações de valor.")
-    
-    conn = sqlite3.connect(DB_NAME)
-    df_mov = pd.read_sql_query("SELECT m.id, p.nome as produto, m.tipo, m.quantidade, m.preco_unitario, strftime('%Y-%m', m.data_movimentacao) as mes_ano FROM movimentacoes_estoque m JOIN produtos p ON p.id = m.produto_id", conn)
-    conn.close()
-
-    if df_mov.empty:
-        st.info("Ainda não há lançamentos registrados para gerar comparativos.")
-    else:
-        meses_disponiveis = sorted(df_mov['mes_ano'].unique(), reverse=True)
-        
-        if len(meses_disponiveis) < 2:
-            st.warning("São necessários lançamentos em pelo menos dois meses diferentes para montar o comparativo de períodos.")
-            st.markdown("### Histórico de Lançamentos:")
-            st.dataframe(df_mov, use_container_width=True)
-        else:
-            col1, col2 = st.columns(2)
-            with col1:
-                mes_atual = st.selectbox("Selecione o Mês Recente (Atual)", meses_disponiveis, index=0)
-            with col2:
-                mes_anterior = st.selectbox("Selecione o Mês Base (Anterior)", meses_disponiveis, index=1 if len(meses_disponiveis) > 1 else 0)
-
-            df_atual = df_mov[df_mov['mes_ano'] == mes_atual].groupby('produto').agg(qtd_atual=('quantidade', 'sum'), preco_atual=('preco_unitario', 'mean')).reset_index()
-            df_ant = df_mov[df_mov['mes_ano'] == mes_anterior].groupby('produto').agg(qtd_ant=('quantidade', 'sum'), preco_ant=('preco_unitario', 'mean')).reset_index()
-
-            df_comp = pd.merge(df_atual, df_ant, on='produto', how='outer').fillna(0)
-            df_comp['Diferença Qtd'] = df_comp['qtd_atual'] - df_comp['qtd_ant']
-            df_comp['Diferença Preço'] = df_comp['preco_atual'] - df_comp['preco_ant']
-
-            df_comp.rename(columns={'produto': 'Produto', 'qtd_ant': f'Qtd ({mes_anterior})', 'qtd_atual': f'Qtd ({mes_atual})', 'preco_ant': f'Preço ({mes_anterior})', 'preco_atual': f'Preço ({mes_atual})'}, inplace=True)
-
-            st.subheader("📌 Indicadores de Variação")
-            m1, m2, m3 = st.columns(3)
-            total_dif_qtd = df_comp['Diferença Qtd'].sum()
-            media_dif_preco = df_comp['Diferença Preço'].mean()
-            
-            m1.metric("Variação de Volume", f"{total_dif_qtd:+} un")
-            m2.metric("Variação Média de Preço", f"R$ {media_dif_preco:+.2f}")
-            m3.metric("Itens Analisados", len(df_comp))
-
-            st.divider()
-            st.subheader("📋 Tabela Analítica")
-            st.dataframe(df_comp, use_container_width=True)
-
-            st.divider()
-            st.subheader("📄 Emissão de Documento Oficial")
-            pdf_data = gerar_pdf_bytes(df_comp, mes_atual, mes_anterior)
-            st.download_button(label="📥 Baixar Relatório Comparativo em PDF", data=pdf_data, file_name=f"relatorio_gestao_compras_{mes_anterior}_vs_{mes_atual}.pdf", mime="application/pdf")
-
-# ==========================================
-# 4. GESTÃO DE USUÁRIOS
-# ==========================================
-elif menu == "👥 Gestão de Usuários":
-    st.subheader("👥 Controle de Acesso e Usuários")
-    st.caption("Gerenciamento de contas e atribuição de permissões no sistema.")
-    
-    with st.form("form_novo_usuario"):
-        st.subheader("Cadastrar Novo Usuário")
-        novo_nome = st.text_input("Nome Completo")
-        novo_username = st.text_input("E-mail / Usuário de Acesso")
-        nova_senha = st.text_input("Senha", type="password")
-        novo_role = st.selectbox("Nível de Permissão", ["operador", "admin"])
-        
-        submit_user = st.form_submit_button("Cadastrar Usuário")
-        if submit_user:
-            if not novo_nome or not novo_username or not nova_senha:
-                st.error("Todos os campos do formulário devem ser preenchidos.")
-            else:
-                try:
-                    conn = sqlite3.connect(DB_NAME)
-                    cursor = conn.cursor()
-                    cursor.execute("INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)", (novo_nome.strip(), novo_username.strip().lower(), hash_password(nova_senha), novo_role))
-                    conn.commit()
-                    conn.close()
-                    st.success(f"Acesso para '{novo_username}' configurado com sucesso!")
-                except sqlite3.IntegrityError:
-                    st.error("O e-mail/usuário informado já está cadastrado no sistema.")
-
-    st.divider()
-    st.subheader("Usuários Ativos")
-    conn = sqlite3.connect(DB_NAME)
-    users_df = pd.read_sql_query("SELECT id, nome, username, role FROM usuarios", conn)
-    conn.close()
-    st.dataframe(users_df, use_container_width=True)
