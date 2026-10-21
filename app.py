@@ -134,7 +134,7 @@ def init_db():
         cursor.execute("CREATE TABLE IF NOT EXISTS produtos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT UNIQUE NOT NULL, codigo_barras TEXT, preco_custo REAL NOT NULL, quantidade_estoque INTEGER NOT NULL DEFAULT 0, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
         cursor.execute("CREATE TABLE IF NOT EXISTS movimentacoes_estoque (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_id INTEGER, tipo TEXT CHECK(tipo IN ('ENTRADA', 'SAIDA')), quantidade INTEGER NOT NULL, preco_unitario REAL NOT NULL, data_compra DATE, data_movimentacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(produto_id) REFERENCES produtos(id))")
         
-        # Migração: adiciona a coluna data_compra caso a tabela já existisse
+        # Migração automática: adiciona a coluna data_compra caso não exista
         cursor.execute("PRAGMA table_info(movimentacoes_estoque)")
         columns = [col[1] for col in cursor.fetchall()]
         if 'data_compra' not in columns:
@@ -144,32 +144,3 @@ def init_db():
         cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'admin'")
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)", ("Administrador", "admin", hash_password("admin123"), "admin"))
-
-        cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'roze.peres@fnp.org.br'")
-        if cursor.fetchone()[0] == 0:
-            cursor.execute("INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)", ("Roze Peres", "roze.peres@fnp.org.br", hash_password("fnp2026"), "admin"))
-        conn.commit()
-
-init_db()
-
-# ==========================================
-# AUTENTICAÇÃO E SESSÃO
-# ==========================================
-def verificar_login(username, password):
-    with sqlite3.connect(DB_NAME) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, nome, role FROM usuarios WHERE username = ? AND senha = ?", (username.lower().strip(), hash_password(password)))
-        return cursor.fetchone()
-
-if "usuario_logado" not in st.session_state:
-    st.session_state["usuario_logado"] = None
-
-def login_screen():
-    col1, col2, col3 = st.columns([0.8, 1.4, 0.8])
-    
-    with col2:
-        with st.form("login_form"):
-            if img_base64:
-                st.markdown(f"<img src='data:image/png;base64,{img_base64}' style='max-width:280px; width:100%; display:block; margin:0 auto 1rem auto;'>", unsafe_allow_html=True)
-            else:
-                st.markdown("<h3 style='text-align
