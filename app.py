@@ -68,7 +68,7 @@ def init_db():
         )
     """)
     
-    # Usuário Padrão Admin (admin)
+    # Usuário Padrão Admin
     cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'admin'")
     if cursor.fetchone()[0] == 0:
         cursor.execute(
@@ -107,15 +107,19 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
 def login_screen():
-    st.title("🔒 Acesso ao Sistema de Estoque & Compras")
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1.5, 1])
     
-    col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.subheader("Login de Acesso")
-        username = st.text_input("E-mail / Usuário")
-        password = st.text_input("Senha", type="password")
+        st.markdown("<h2 style='text-align: center;'>🔒 Acesso ao Sistema</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align: center; color: gray;'>Gestão de Estoque & Compras</p>", unsafe_allow_html=True)
+        st.divider()
         
-        if st.button("Entrar", type="primary", use_container_width=True):
+        username = st.text_input("E-mail ou Usuário", placeholder="seu.email@fnp.org.br")
+        password = st.text_input("Senha", type="password", placeholder="••••••••")
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("Entrar no Sistema", type="primary", use_container_width=True):
             user = verificar_login(username, password)
             if user:
                 st.session_state["usuario_logado"] = {
@@ -127,14 +131,12 @@ def login_screen():
                 st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
-        
-        st.info("💡 **Acesso Cadastrado:**\n- **E-mail:** `roze.peres@fnp.org.br` | **Senha:** `fnp2026`\n- **Acesso Admin:** `admin` | **Senha:** `admin123`")
 
 def logout():
     st.session_state["usuario_logado"] = None
     st.rerun()
 
-# Bloqueia a execução caso não esteja autenticado
+# Bloqueia a execução das telas caso não esteja autenticado
 if not st.session_state["usuario_logado"]:
     login_screen()
     st.stop()
