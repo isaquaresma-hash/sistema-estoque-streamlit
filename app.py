@@ -32,153 +32,116 @@ def get_base64_of_bin_file(bin_file):
 img_name = "Sistema de Compras e Estoque.png"
 img_base64 = get_base64_of_bin_file(img_name)
 
-# Verificar estado de autenticação
-if "usuario_logado" not in st.session_state:
-    st.session_state["usuario_logado"] = None
-
 # ==========================================
-# ESTILIZAÇÃO CSS (DESIGNS DIFERENCIADOS)
+# ESTILIZAÇÃO CSS (OCULTAR HEADER E FIXAR LOGIN)
 # ==========================================
-if not st.session_state["usuario_logado"]:
-    # CSS exclusivo da Tela de Login (Centralização perfeita e sem scroll)
-    css_code = """<style>
-        header[data-testid="stHeader"] {
-            display: none !important;
-        }
-        
-        html, body, [data-testid="stAppViewContainer"] {
-            background-color: #F0F4F9 !important;
-            height: 100vh !important;
-            overflow: hidden !important;
-        }
+css_code = """<style>
+    /* Ocultar o cabeçalho superior nativo do Streamlit */
+    header[data-testid="stHeader"] {
+        display: none !important;
+    }
+    
+    [data-testid='stAppViewContainer'] {
+        background-color: #F0F4F9 !important;
+    }
 
-        .main .block-container {
-            padding: 0 !important;
-            max-width: 100% !important;
-            height: 100vh !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-        }
+    .main .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+        max-width: 1200px !important;
+    }
 
-        .login-wrapper {
-            width: 100%;
-            max-width: 480px;
-            margin: auto;
-            padding: 1rem;
-        }
+    /* Sidebar */
+    [data-testid='stSidebar'] {
+        background-color: #FFFFFF !important;
+        border-right: 1px solid #D7E3F1;
+    }
+    [data-testid='stSidebar'] * {
+        color: #103965 !important;
+    }
 
-        .login-wrapper div[data-testid='stForm'] {
-            background-color: #FFFFFF !important;
-            padding: 2.5rem 2.2rem 2rem 2.2rem !important;
-            border-radius: 20px !important;
-            border: 1px solid #E2E8F0 !important;
-            box-shadow: 0 15px 35px rgba(0, 33, 113, 0.08) !important;
-            width: 100% !important;
-        }
+    /* Container de Login centralizado e expandido */
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 2rem;
+    }
 
-        .login-logo-img {
-            max-width: 300px;
-            width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto 1.2rem auto;
-        }
+    /* Cartão de LOGIN expandido */
+    .login-container div[data-testid='stForm'] {
+        background-color: #FFFFFF !important;
+        padding: 2.5rem 2.5rem 2rem 2.5rem !important;
+        border-radius: 20px !important;
+        border: 1px solid #E2E8F0 !important;
+        position: relative !important;
+        overflow: hidden !important;
+        box-shadow: 0 12px 35px rgba(0, 33, 113, 0.09) !important;
+        width: 100% !important;
+    }
 
-        .login-welcome-title {
-            color: #0D1B2A;
-            font-size: 1.45rem;
-            font-weight: 800;
-            margin: 0 0 0.2rem 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+    .login-logo-img {
+        max-width: 320px;
+        width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto 1.2rem auto;
+    }
 
-        .login-welcome-sub {
-            color: #64748B;
-            font-size: 0.9rem;
-            margin-bottom: 1.5rem;
-            font-weight: 500;
-        }
+    .login-welcome-title {
+        color: #0D1B2A;
+        font-size: 1.5rem;
+        font-weight: 800;
+        margin: 0 0 0.2rem 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-        div[data-testid='stForm'] button[kind='secondaryFormSubmit'] {
-            background-color: #0D47A1 !important;
-            color: #FFFFFF !important;
-            font-weight: 700 !important;
-            border-radius: 10px !important;
-            border: none !important;
-            padding: 0.75rem 1.5rem !important;
-            margin-top: 0.5rem !important;
-            width: 100% !important;
-        }
+    .login-welcome-sub {
+        color: #64748B;
+        font-size: 0.92rem;
+        margin-bottom: 1.5rem;
+        font-weight: 500;
+    }
 
-        div[data-testid='stForm'] button[kind='secondaryFormSubmit']:hover {
-            background-color: #002171 !important;
-            color: #FFFFFF !important;
-        }
-    </style>"""
-else:
-    # CSS da Aplicação Interna Pós-Login
-    css_code = """<style>
-        header[data-testid="stHeader"] {
-            display: none !important;
-        }
-        
-        [data-testid='stAppViewContainer'] {
-            background-color: #F0F4F9 !important;
-        }
+    /* Formulários e Cartões Internos Elegantes */
+    div[data-testid='stForm'] {
+        background-color: #FFFFFF !important;
+        border-radius: 16px !important;
+        border: 1px solid #E2E8F0 !important;
+        padding: 1.8rem !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+    }
 
-        .main .block-container {
-            padding-top: 1.5rem !important;
-            padding-bottom: 2rem !important;
-            max-width: 1200px !important;
-        }
+    /* Estilização dos Botões de Ação */
+    div[data-testid='stForm'] button[kind='secondaryFormSubmit'] {
+        background-color: #0D47A1 !important;
+        color: #FFFFFF !important;
+        font-weight: 700 !important;
+        border-radius: 10px !important;
+        border: none !important;
+        padding: 0.7rem 1.5rem !important;
+        margin-top: 0.5rem !important;
+    }
 
-        [data-testid='stSidebar'] {
-            background-color: #FFFFFF !important;
-            border-right: 1px solid #D7E3F1;
-        }
-        [data-testid='stSidebar'] * {
-            color: #103965 !important;
-        }
+    div[data-testid='stForm'] button[kind='secondaryFormSubmit']:hover {
+        background-color: #002171 !important;
+        color: #FFFFFF !important;
+    }
 
-        div[data-testid='stForm'] {
-            background-color: #FFFFFF !important;
-            border-radius: 16px !important;
-            border: 1px solid #E2E8F0 !important;
-            padding: 1.8rem !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
-        }
+    .user-profile-card {
+        background-color: #0D47A1;
+        color: #FFFFFF;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1.2rem;
+        border-left: 5px solid #5A9BE5;
+    }
 
-        div[data-testid='stForm'] button[kind='secondaryFormSubmit'] {
-            background-color: #0D47A1 !important;
-            color: #FFFFFF !important;
-            font-weight: 700 !important;
-            border-radius: 10px !important;
-            border: none !important;
-            padding: 0.6rem 1.5rem !important;
-            margin-top: 0.5rem !important;
-        }
-
-        div[data-testid='stForm'] button[kind='secondaryFormSubmit']:hover {
-            background-color: #002171 !important;
-            color: #FFFFFF !important;
-        }
-
-        .user-profile-card {
-            background-color: #0D47A1;
-            color: #FFFFFF;
-            padding: 1rem;
-            border-radius: 10px;
-            margin-bottom: 1.2rem;
-            border-left: 5px solid #5A9BE5;
-        }
-
-        .user-profile-card p {
-            margin: 0;
-            color: #FFFFFF !important;
-        }
-    </style>"""
-
+    .user-profile-card p {
+        margin: 0;
+        color: #FFFFFF !important;
+    }
+</style>"""
 st.markdown(css_code, unsafe_allow_html=True)
 
 DB_NAME = "estoque_compras.db"
@@ -221,38 +184,44 @@ def verificar_login(username, password):
     conn.close()
     return user
 
+if "usuario_logado" not in st.session_state:
+    st.session_state["usuario_logado"] = None
+
 def login_screen():
-    st.markdown("<div class='login-wrapper'>", unsafe_allow_html=True)
-    with st.form("login_form"):
-        if img_base64:
-            st.markdown(f"<img src='data:image/png;base64,{img_base64}' class='login-logo-img' alt='Logo FNP'>", unsafe_allow_html=True)
-        else:
-            st.markdown("<h3 style='text-align:center; color:#0D47A1; margin-bottom:1rem;'>SISTEMA DE GESTÃO DE COMPRAS E ESTOQUE</h3>", unsafe_allow_html=True)
-            
-        st.markdown("<p class='login-welcome-title'>Bem-vindo(a)!</p>", unsafe_allow_html=True)
-        st.markdown("<p class='login-welcome-sub'>Faça login para acessar o sistema.</p>", unsafe_allow_html=True)
-        
-        username = st.text_input("✉️ E-mail ou Usuário", placeholder="usuario@fnp.org.br")
-        password = st.text_input("🔒 Senha", type="password", placeholder="••••••••")
-        st.markdown("<br>", unsafe_allow_html=True)
-        
-        submit_login = st.form_submit_button("➔ Acessar Sistema", use_container_width=True)
-        
-        if submit_login:
-            user = verificar_login(username, password)
-            if user:
-                st.session_state["usuario_logado"] = {
-                    "id": user[0],
-                    "nome": user[1],
-                    "role": user[2]
-                }
-                st.success(f"Autenticado com sucesso. Bem-vindo(a), {user[1]}!")
-                st.rerun()
+    col1, col2, col3 = st.columns([0.8, 1.4, 0.8])
+    
+    with col2:
+        st.markdown("<div class='login-container'>", unsafe_allow_html=True)
+        with st.form("login_form"):
+            if img_base64:
+                st.markdown(f"<img src='data:image/png;base64,{img_base64}' class='login-logo-img' alt='Logo FNP'>", unsafe_allow_html=True)
             else:
-                st.error("Credenciais inválidas. Verifique o usuário e a senha fornecidos.")
-        
-        st.markdown("<p class='secure-footer' style='text-align:center; color:#94A3B8; font-size:0.8rem; margin-top:1rem;'>🔒 Acesso seguro</p>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+                st.markdown("<h3 style='text-align:center; color:#0D47A1; margin-bottom:1rem;'>SISTEMA DE GESTÃO DE COMPRAS E ESTOQUE</h3>", unsafe_allow_html=True)
+                
+            st.markdown("<p class='login-welcome-title'>Bem-vindo(a)!</p>", unsafe_allow_html=True)
+            st.markdown("<p class='login-welcome-sub'>Faça login para acessar o sistema.</p>", unsafe_allow_html=True)
+            
+            username = st.text_input("✉️ E-mail ou Usuário", placeholder="usuario@fnp.org.br")
+            password = st.text_input("🔒 Senha", type="password", placeholder="••••••••")
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            submit_login = st.form_submit_button("➔ Acessar Sistema", use_container_width=True)
+            
+            if submit_login:
+                user = verificar_login(username, password)
+                if user:
+                    st.session_state["usuario_logado"] = {
+                        "id": user[0],
+                        "nome": user[1],
+                        "role": user[2]
+                    }
+                    st.success(f"Autenticado com sucesso. Bem-vindo(a), {user[1]}!")
+                    st.rerun()
+                else:
+                    st.error("Credenciais inválidas. Verifique o usuário e a senha fornecidos.")
+            
+            st.markdown("<p class='secure-footer' style='text-align:center; color:#94A3B8; font-size:0.8rem; margin-top:1rem;'>🔒 Acesso seguro</p>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 def logout():
     st.session_state["usuario_logado"] = None
