@@ -423,3 +423,319 @@ if menu == "📦 Gestão de Produtos":
                         st.success(f"Produto '{nome_formatado}' cadastrado com sucesso!")
                     except sqlite3.IntegrityError:
                         st.error("Já existe um produto registrado com este nome.")
+
+    with tab2:
+        with sqlite3.connect(DB_NAME) as conn:
+            produtos_df = pd.read_sql_query("SELECT id, nome, preco_custo, quantidade_estoque FROM produtos ORDER BY nome ASC", conn)
+        
+        if not produtos_df.empty:
+            prod_selecionado = st.selectbox("Selecione o Produto para Alteração", produtos_df['nome'].tolist())
+            dados_prod = produtos_df[produtos_df['nome'] == prod_selecionado].iloc[0]
+            
+            with st.form("form_editar"):
+                c1, c2 = st.columns(2)
+                with c1:
+                    novo_nome = st.text_input("Nome", value=dados_prod['nome'])
+                with c2:
+                    novo_preco = st.number_input("Preço de Custo (R$)", min_value=0.01, value=float(dados_prod['preco_custo']), format="%.2f")
+                
+                if st.form_submit_button("🔄 Atualizar Informações"):
+                    nome_edit_formatado = novo_nome.strip().title()
+                    if not nome_edit_formatado:
+                        st.error("O nome do produto é obrigatório.")
+                    else:
+                        try:
+                            with sqlite3.connect(DB_NAME) as conn:
+                                cursor = conn.cursor()
+                                cursor.execute(
+                                    "UPDATE produtos SET nome = ?, preco_custo = ? WHERE id = ?",
+                                    (nome_edit_formatado, novo_preco, int(dados_prod["id"]))
+                                )
+                                conn.commit()
+                            st.success("Dados do produto atualizados com sucesso!")
+                            st.rerun()
+                        except sqlite3.IntegrityError:
+                            st.error("Já existe outro produto cadastrado com esse nome.")
+        else:
+            st.info("Nenhum produto cadastrado no banco de dados.")
+
+    with tab3:
+        st.warning("Por segurança, só é possível excluir produtos que não tenham movimentações registradas.")
+        with sqlite3.connect(DB_NAME) as conn:
+            produtos_excluir = pd.read_sql_query(
+                "SELECT p.id, p.nome, p.quantidade_estoque FROM produtos p "
+                "WHERE NOT EXISTS (SELECT 1 FROM movimentacoes_estoque m WHERE m.produto_id = p.id) "
+                "ORDER BY p.nome",
+                conn
+            )
+        if produtos_excluir.empty:
+            st.info("Não há produtos sem histórico disponíveis para exclusão.")
+        else:
+            nome_excluir = st.selectbox("Selecione o produto que deseja excluir", produtos_excluir["nome"].tolist(), key="produto_para_excluir")
+            dados_excluir = produtos_excluir[produtos_excluir["nome"] == nome_excluir].iloc[0]
+            st.write(f"Estoque atual: **{inteiro_seguro(dados_excluir['quantidade_estoque'])}** unidade(s)")
+            confirmar_exclusao = st.checkbox("Confirmo que desejo excluir este produto permanentemente.", key="confirmar_exclusao_produto")
+            if st.button("🗑️ Excluir produto", disabled=not confirmar_exclusao):
+                with sqlite3.connect(DB_NAME) as conn:
+                    conn.execute("DELETE FROM produtos WHERE id = ?", (int(dados_excluir["id"]),))
+                    conn.commit()
+                st.success("Produto excluído com sucesso.")
+                st.rerun()
+
+# ==========================================
+# 2. MOVIMENTAÇÃO DE ESTOQUE
+# ==========================================
+elif menu == "🔄 Movimentação de Estoque":
+    st.subheader("🔄 Movimentações de Compras & Estoque")
+    st.caption("Registro de compras (entradas) e saídas operacionais.")
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    with sqlite3.connect(DB_NAME) as conn:
+        produtos_df = pd.read_sql_query("SELECT id, nome, preco_custo, quantidade_estoque FROM produtos ORDER BY nome ASC", conn)
+    
+    if produtos_df.empty:
+        st.warning("Nenhum produto disponível no catálogo. Cadastre produtos antes de realizar movimentações.")
+    else:
+        col_esq, col_dir = st.columns([1.1, 0.9], gap="large")
+        
+        with col_esq:
+            st.markdown("##### 1. Seleção e Resumo do Item")
+            prod_nome = st.selectbox("Selecione o Produto", produtos_df['nome'].tolist())
+            prod_info = produtos_df[produtos_df['nome'] == prod_nome].iloc[0]
+            
+            saldo_atual = inteiro_seguro(prod_info['quantidade_estoque'])
+            preco_base = float(prod_info['preco_custo'])
+            valor_total_estoque = saldo_atual * preco_base
+            
+            st.markdown(f"""
+            <div style='background-color:#FFFFFF; padding:1.2rem; border-radius:12px; border:1px solid #E2E8F0; border-left:6px solid #0D47A1; margin-bottom:1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.02);'>
+                <p style='margin:0; font-size:0.8rem; text-transform:uppercase; font-weight:700; color:#64748B;'>Informações do Item</p>
+                <h3 style='margin:0.2rem 0 0.8rem 0; color:#0D1B2A; font-size:1.3rem;'>📦 {prod_info['nome']}</h3>
+                <div style='display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;'>
+                    <div><span style='font-size:0.85rem; color:#475569;'>Estoque Atual</span><br><b style='font-size:1.2rem; color:#0D47A1;'>{saldo_atual} un</b></div>
+                    <div><span style='font-size:0.85rem; color:#475569;'>Preço Base</span><br><b style='font-size:1.1rem; color:#1E293B;'>R$ {preco_base:.2f}</b></div>
+                    <div><span style='font-size:0.85rem; color:#475569;'>Valor Em Estoque</span><br><b style='font-size:1.1rem; color:#10B981;'>R$ {valor_total_estoque:.2f}</b></div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            data_operacao = st.date_input("📅 Data da Compra / Operação", value=date.today())
+
+            if saldo_atual > 0:
+                with st.expander("🚨 Zerar Estoque deste Produto"):
+                    st.warning(f"Esta ação dará baixa em todas as **{saldo_atual}** unidades de **{prod_info['nome']}**.")
+                    if st.button("🔴 Confirmar Zerar Estoque", use_container_width=True):
+                        with sqlite3.connect(DB_NAME) as conn:
+                            cursor = conn.cursor()
+                            cursor.execute(
+                                "INSERT INTO movimentacoes_estoque (produto_id, tipo, quantidade, preco_unitario, data_compra) VALUES (?, 'SAIDA', ?, ?, ?)",
+                                (int(prod_info['id']), saldo_atual, preco_base, str(date.today()))
+                            )
+                            cursor.execute("UPDATE produtos SET quantidade_estoque = 0 WHERE id = ?", (int(prod_info['id']),))
+                            conn.commit()
+                        st.success(f"Estoque zerado com sucesso!")
+                        st.rerun()
+
+        with col_dir:
+            st.markdown("##### 2. Lançar Movimentação")
+            with st.container():
+                st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
+                tipo_mov = st.radio("Tipo de Lançamento", ["ENTRADA (Compra/Aporte)", "SAIDA (Baixa/Consumo)"])
+                
+                c_q, c_p = st.columns(2)
+                with c_q:
+                    quantidade = st.number_input("Quantidade", min_value=1, step=1)
+                with c_p:
+                    preco_unitario = st.number_input("Preço Unitário (R$)", min_value=0.01, value=float(prod_info['preco_custo']), format="%.2f")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("💾 Registrar Operação", use_container_width=True, type="primary"):
+                    tipo = "ENTRADA" if "ENTRADA" in tipo_mov else "SAIDA"
+                    
+                    if int(quantidade) < 1:
+                        st.error("A quantidade deve ser maior que zero.")
+                    else:
+                        try:
+                            with sqlite3.connect(DB_NAME, timeout=30) as conn:
+                                conn.execute("PRAGMA foreign_keys = ON")
+                                cursor = conn.cursor()
+                                cursor.execute("SELECT quantidade_estoque FROM produtos WHERE id = ?", (int(prod_info['id']),))
+                                saldo_result = cursor.fetchone()
+                                if saldo_result is None:
+                                    raise ValueError("O produto selecionado não existe mais no banco de dados.")
+                                saldo_banco = inteiro_seguro(saldo_result[0])
+                                if tipo == "SAIDA" and int(quantidade) > saldo_banco:
+                                    raise ValueError("A quantidade solicitada excede o saldo atual em estoque.")
+                                
+                                nova_qtd = saldo_banco + int(quantidade) if tipo == "ENTRADA" else saldo_banco - int(quantidade)
+                                cursor.execute(
+                                    "INSERT INTO movimentacoes_estoque (produto_id, tipo, quantidade, preco_unitario, data_compra) VALUES (?, ?, ?, ?, ?)",
+                                    (int(prod_info['id']), tipo, int(quantidade), float(preco_unitario), str(data_operacao))
+                                )
+                                cursor.execute("UPDATE produtos SET quantidade_estoque = ? WHERE id = ?", (nova_qtd, int(prod_info['id'])))
+                                conn.commit()
+                            st.success(f"Movimentação registrada com sucesso!")
+                            st.rerun()
+                        except ValueError as exc:
+                            st.error(str(exc))
+                st.markdown("</div>", unsafe_allow_html=True)
+
+# ==========================================
+# 3. DASHBOARD E RELATÓRIO COMPARATIVO
+# ==========================================
+elif menu == "📊 Dashboard & Relatórios":
+    st.subheader("📊 Painel Comparativo & Exportação")
+    st.caption("Consulte o histórico completo e compare períodos.")
+
+    with sqlite3.connect(DB_NAME) as conn:
+        df_mov = pd.read_sql_query(
+            "SELECT m.id AS ID, m.produto_id, p.nome AS Produto, m.tipo AS Tipo, "
+            "m.quantidade AS Quantidade, m.preco_unitario AS Preço_Unitario, "
+            "COALESCE(m.data_compra, DATE(m.data_movimentacao)) AS Data_Compra, "
+            "strftime('%Y-%m', COALESCE(m.data_compra, m.data_movimentacao)) AS Mes_Ano "
+            "FROM movimentacoes_estoque m "
+            "JOIN produtos p ON p.id = m.produto_id "
+            "ORDER BY COALESCE(m.data_compra, DATE(m.data_movimentacao)) DESC, m.id DESC",
+            conn
+        )
+
+    if df_mov.empty:
+        st.info("Ainda não há lançamentos registrados.")
+    else:
+        st.subheader("📚 Histórico de Lançamentos")
+        filtro_produtos = ["Todos"] + sorted(df_mov["Produto"].dropna().unique().tolist())
+        produto_filtro = st.selectbox("Filtrar por produto", filtro_produtos)
+        df_historico = df_mov.copy()
+        if produto_filtro != "Todos":
+            df_historico = df_historico[df_historico["Produto"] == produto_filtro]
+
+        for _, row in df_historico.iterrows():
+            c1, c2, c3, c4, c5, c6, c7 = st.columns([0.55, 1.8, 1.0, 0.65, 1.0, 1.1, 0.65])
+            c1.write(f"#{int(row['ID'])}")
+            c2.write(row["Produto"])
+            c3.write(("🟢 " if row["Tipo"] == "ENTRADA" else "🔴 ") + row["Tipo"])
+            c4.write(int(row["Quantidade"]))
+            c5.write(f"R$ {float(row['Preço_Unitario']):.2f}")
+            try:
+                data_formatada = datetime.strptime(str(row["Data_Compra"])[:10], "%Y-%m-%d").strftime("%d/%m/%Y")
+            except (ValueError, TypeError):
+                data_formatada = str(row["Data_Compra"])
+            c6.write(data_formatada)
+
+            if c7.button("🗑️", key=f"del_mov_{int(row['ID'])}", help=f"Excluir lançamento #{int(row['ID'])}"):
+                erro_exclusao = None
+                with sqlite3.connect(DB_NAME, timeout=30) as conn:
+                    conn.execute("PRAGMA foreign_keys = ON")
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT tipo, quantidade, produto_id FROM movimentacoes_estoque WHERE id = ?", (int(row["ID"]),))
+                    mov = cursor.fetchone()
+                    if not mov:
+                        erro_exclusao = "Este lançamento já foi excluído."
+                    else:
+                        tipo_excluido, qtd_excluida, produto_id = mov
+                        cursor.execute("SELECT quantidade_estoque FROM produtos WHERE id = ?", (produto_id,))
+                        saldo_result = cursor.fetchone()
+                        if not saldo_result:
+                            erro_exclusao = "O produto associado não existe."
+                        else:
+                            saldo = inteiro_seguro(saldo_result[0])
+                            novo_saldo = saldo - int(qtd_excluida) if tipo_excluido == "ENTRADA" else saldo + int(qtd_excluida)
+                            if novo_saldo < 0:
+                                erro_exclusao = "Não é possível reverter esta entrada pois deixaria o saldo negativo."
+                            else:
+                                cursor.execute("UPDATE produtos SET quantidade_estoque = ? WHERE id = ?", (novo_saldo, produto_id))
+                                cursor.execute("DELETE FROM movimentacoes_estoque WHERE id = ?", (int(row["ID"]),))
+                                conn.commit()
+                if erro_exclusao:
+                    st.error(erro_exclusao)
+                else:
+                    st.success("Lançamento excluído com sucesso!")
+                    st.rerun()
+
+        st.divider()
+        st.subheader("📈 Análise Comparativa Mensal")
+        
+        meses_disponiveis = sorted(df_mov["Mes_Ano"].dropna().unique().tolist(), reverse=True)
+        if len(meses_disponiveis) >= 1:
+            col_m1, col_m2 = st.columns(2)
+            with col_m1:
+                mes_atual = st.selectbox("Selecione o Mês Atual / Foco", meses_disponiveis, index=0)
+            with col_m2:
+                idx_anterior = 1 if len(meses_disponiveis) > 1 else 0
+                mes_anterior = st.selectbox("Selecione o Mês para Comparação", meses_disponiveis, index=idx_anterior)
+
+            df_m_atual = df_mov[(df_mov["Mes_Ano"] == mes_atual) & (df_mov["Tipo"] == "ENTRADA")]
+            df_m_ant = df_mov[(df_mov["Mes_Ano"] == mes_anterior) & (df_mov["Tipo"] == "ENTRADA")]
+
+            grp_atual = df_m_atual.groupby("Produto").agg(
+                Qtd_Atual=("Quantidade", "sum"),
+                Preco_Atual=("Preço_Unitario", "mean")
+            ).reset_index()
+
+            grp_ant = df_m_ant.groupby("Produto").agg(
+                Qtd_Ant=("Quantidade", "sum"),
+                Preco_Ant=("Preço_Unitario", "mean")
+            ).reset_index()
+
+            df_comp = pd.merge(grp_atual, grp_ant, on="Produto", how="outer").fillna(0)
+            
+            df_comp["Diferença Qtd"] = df_comp["Qtd_Atual"] - df_comp["Qtd_Ant"]
+            df_comp["Diferença Preço"] = df_comp["Preco_Atual"] - df_comp["Preco_Ant"]
+
+            df_comp.rename(columns={
+                "Qtd_Ant": f"Qtd ({mes_anterior})",
+                "Qtd_Atual": f"Qtd ({mes_atual})",
+                "Preco_Ant": f"Preço ({mes_anterior})",
+                "Preco_Atual": f"Preço ({mes_atual})"
+            }, inplace=True)
+
+            st.dataframe(df_comp, use_container_width=True)
+
+            c_exp1, c_exp2 = st.columns(2)
+            with c_exp1:
+                excel_bytes = gerar_excel_estilizado_bytes(df_comp, nome_aba="Comparativo")
+                st.download_button("📊 Baixar Comparativo em Excel", data=excel_bytes, file_name=f"comparativo_{mes_anterior}_vs_{mes_atual}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+            with c_exp2:
+                pdf_bytes = gerar_pdf_bytes(df_comp, mes_atual, mes_anterior)
+                st.download_button("📄 Baixar Relatório em PDF", data=pdf_bytes, file_name=f"relatorio_{mes_anterior}_vs_{mes_atual}.pdf", mime="application/pdf", use_container_width=True)
+
+# ==========================================
+# 4. GESTÃO DE USUÁRIOS
+# ==========================================
+elif menu == "👥 Gestão de Usuários" and user_info["role"] == "admin":
+    st.subheader("👥 Gestão de Usuários do Sistema")
+    st.caption("Cadastre novos operadores e gerencie permissões.")
+    
+    with st.form("form_novo_usuario"):
+        st.markdown("#### Cadastrar Novo Usuário")
+        c1, c2 = st.columns(2)
+        with c1:
+            novo_nome_user = st.text_input("Nome Completo")
+            novo_username = st.text_input("E-mail / Usuário")
+        with c2:
+            nova_senha = st.text_input("Senha", type="password")
+            nova_role = st.selectbox("Perfil de Acesso", ["operador", "admin"])
+            
+        btn_user = st.form_submit_button("➕ Cadastrar Usuário")
+        if btn_user:
+            if not novo_nome_user or not novo_username or not nova_senha:
+                st.error("Preencha todos os campos para cadastrar o usuário.")
+            else:
+                try:
+                    with sqlite3.connect(DB_NAME) as conn:
+                        cursor = conn.cursor()
+                        cursor.execute(
+                            "INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)",
+                            (novo_nome_user.strip(), novo_username.strip().lower(), hash_password(nova_senha), nova_role)
+                        )
+                        conn.commit()
+                    st.success(f"Usuário {novo_nome_user} criado com sucesso!")
+                    st.rerun()
+                except sqlite3.IntegrityError:
+                    st.error("Já existe um usuário cadastrado com este e-mail/username.")
+
+    st.divider()
+    st.markdown("#### Usuários Cadastrados")
+    with sqlite3.connect(DB_NAME) as conn:
+        users_df = pd.read_sql_query("SELECT id, nome, username, role FROM usuarios ORDER BY nome", conn)
+    st.dataframe(users_df, use_container_width=True)
