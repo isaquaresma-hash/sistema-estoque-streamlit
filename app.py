@@ -37,10 +37,10 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
 # ==========================================
-# ESTILIZAÇÃO CSS (COMPACTO E CONTROLADO)
+# ESTILIZAÇÃO CSS (LARGURA PROPORCIONAL E CENTRADA)
 # ==========================================
 if not st.session_state["usuario_logado"]:
-    # CSS exclusivo da Tela de Login (Compacto, Limpo e Proporcional)
+    # CSS exclusivo da Tela de Login (Cartão Compacto e Centralizado)
     css_code = """<style>
         header[data-testid="stHeader"] {
             display: none !important;
@@ -61,33 +61,29 @@ if not st.session_state["usuario_logado"]:
             justify-content: center !important;
         }
 
-        .login-wrapper {
-            width: 100%;
-            max-width: 380px;
-            margin: auto;
-            padding: 1rem;
-        }
-
-        .login-wrapper div[data-testid='stForm'] {
+        /* Cartão de Login com tamanho estritamente controlado */
+        div[data-testid='stForm'] {
             background-color: #FFFFFF !important;
-            padding: 1.8rem 1.5rem 1.5rem 1.5rem !important;
-            border-radius: 16px !important;
+            padding: 2.2rem 2rem 1.8rem 2rem !important;
+            border-radius: 18px !important;
             border: 1px solid #E2E8F0 !important;
-            box-shadow: 0 8px 24px rgba(0, 33, 113, 0.08) !important;
-            width: 100% !important;
+            box-shadow: 0 10px 30px rgba(0, 33, 113, 0.08) !important;
+            width: 420px !important;
+            max-width: 90vw !important;
+            margin: auto !important;
         }
 
         .login-logo-img {
-            max-width: 180px !important;
+            max-width: 190px !important;
             width: 100% !important;
             height: auto !important;
             display: block !important;
-            margin: 0 auto 1rem auto !important;
+            margin: 0 auto 1.2rem auto !important;
         }
 
         .login-welcome-title {
             color: #0D1B2A;
-            font-size: 1.25rem;
+            font-size: 1.35rem;
             font-weight: 800;
             margin: 0 0 0.2rem 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -96,8 +92,8 @@ if not st.session_state["usuario_logado"]:
 
         .login-welcome-sub {
             color: #64748B;
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
+            font-size: 0.88rem;
+            margin-bottom: 1.4rem;
             font-weight: 500;
             text-align: center;
         }
@@ -108,7 +104,7 @@ if not st.session_state["usuario_logado"]:
             font-weight: 700 !important;
             border-radius: 8px !important;
             border: none !important;
-            padding: 0.6rem 1rem !important;
+            padding: 0.65rem 1rem !important;
             margin-top: 0.5rem !important;
             width: 100% !important;
         }
@@ -224,7 +220,6 @@ def verificar_login(username, password):
     return user
 
 def login_screen():
-    st.markdown("<div class='login-wrapper'>", unsafe_allow_html=True)
     with st.form("login_form"):
         if img_base64:
             st.markdown(f"<img src='data:image/png;base64,{img_base64}' class='login-logo-img' alt='Logo FNP'>", unsafe_allow_html=True)
@@ -254,7 +249,6 @@ def login_screen():
                 st.error("Credenciais inválidas. Verifique o usuário e a senha fornecidos.")
         
         st.markdown("<p class='secure-footer' style='text-align:center; color:#94A3B8; font-size:0.78rem; margin-top:0.8rem;'>🔒 Acesso seguro</p>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
 
 def logout():
     st.session_state["usuario_logado"] = None
