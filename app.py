@@ -349,4 +349,38 @@ def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
         table_data.append([
             Paragraph(str(row['Produto']), cell_style),
             Paragraph(str(int(row[f'Qtd ({mes_anterior})'])), cell_style),
-            Paragraph(str(int(row[f'Qtd ({mes_atual})'])), cell_style
+            Paragraph(str(int(row[f'Qtd ({mes_atual})'])), cell_style),
+            Paragraph(dif_qtd_str, cell_style),
+            Paragraph(f"R$ {row[f'Preço ({mes_atual})']:.2f}", cell_style),
+            Paragraph(dif_preco_str, cell_style)
+        ])
+
+    table = Table(table_data, colWidths=[150, 80, 80, 70, 80, 80])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0D47A1')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D7E3F1')),
+    ]))
+    
+    story.append(table)
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+# ==========================================
+# 1. GESTÃO DE PRODUTOS
+# ==========================================
+if menu == "📦 Gestão de Produtos":
+    st.subheader("📦 Cadastro e Alteração de Produtos")
+    st.caption("Cadastre novos produtos e atualize os preços de custo base.")
+    
+    tab1, tab2 = st.tabs(["➕ Cadastrar Novo Produto", "✏️ Editar Produto / Valor"])
+    
+    with tab1:
+        with st.form("form_cadastro"):
+            c1, c2 = st.columns(2)
+            with c1:
+                nome = st.text_input("Nome do
