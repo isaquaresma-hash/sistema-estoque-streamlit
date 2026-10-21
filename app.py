@@ -69,55 +69,24 @@ css_code = """<style>
         display: none !important;
     }
 
-    /* Container de Login centralizado e expandido */
-    .login-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 2rem;
-    }
-
-    /* Cartão de LOGIN expandido */
-    .login-container div[data-testid='stForm'] {
-        background-color: #FFFFFF !important;
-        padding: 2.5rem 2.5rem 2rem 2.5rem !important;
-        border-radius: 20px !important;
-        border: 1px solid #E2E8F0 !important;
-        position: relative !important;
-        overflow: hidden !important;
-        box-shadow: 0 12px 35px rgba(0, 33, 113, 0.09) !important;
-        width: 100% !important;
-    }
-
-    .login-logo-img {
-        max-width: 320px;
-        width: 100%;
-        height: auto;
-        display: block;
-        margin: 0 auto 1.2rem auto;
-    }
-
-    .login-welcome-title {
-        color: #0D1B2A;
-        font-size: 1.5rem;
-        font-weight: 800;
-        margin: 0 0 0.2rem 0;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    .login-welcome-sub {
-        color: #64748B;
-        font-size: 0.92rem;
-        margin-bottom: 1.5rem;
-        font-weight: 500;
-    }
-
+    /* Container de Login */
     div[data-testid='stForm'] {
         background-color: #FFFFFF !important;
         border-radius: 16px !important;
         border: 1px solid #E2E8F0 !important;
-        padding: 1.8rem !important;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+        padding: 2rem !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    /* Garantir visibilidade das caixas de texto no Login */
+    div[data-testid='stForm'] input {
+        color: #1E293B !important;
+        background-color: #FFFFFF !important;
+    }
+
+    div[data-testid='stForm'] label {
+        color: #0F172A !important;
+        font-weight: 600 !important;
     }
 
     div[data-testid='stForm'] button[kind='secondaryFormSubmit'] {
@@ -193,18 +162,117 @@ def login_screen():
     col1, col2, col3 = st.columns([0.8, 1.4, 0.8])
     
     with col2:
-        st.markdown("<div class='login-container'>", unsafe_allow_html=True)
         with st.form("login_form"):
             if img_base64:
-                st.markdown(f"<img src='data:image/png;base64,{img_base64}' class='login-logo-img' alt='Logo FNP'>", unsafe_allow_html=True)
+                st.markdown(f"<img src='data:image/png;base64,{img_base64}' style='max-width:280px; width:100%; display:block; margin:0 auto 1rem auto;'>", unsafe_allow_html=True)
             else:
                 st.markdown("<h3 style='text-align:center; color:#0D47A1; margin-bottom:1rem;'>SISTEMA DE GESTÃO DE COMPRAS E ESTOQUE</h3>", unsafe_allow_html=True)
                 
-            st.markdown("<p class='login-welcome-title'>Bem-vindo(a)!</p>", unsafe_allow_html=True)
-            st.markdown("<p class='login-welcome-sub'>Faça login para acessar o sistema.</p>", unsafe_allow_html=True)
+            st.markdown("<h3 style='color:#0D1B2A; margin-bottom:0.2rem;'>Bem-vindo(a)!</h3>", unsafe_allow_html=True)
+            st.markdown("<p style='color:#64748B; font-size:0.9rem; margin-bottom:1.5rem;'>Faça login para acessar o sistema.</p>", unsafe_allow_html=True)
             
             username = st.text_input("✉️ E-mail ou Usuário", placeholder="usuario@fnp.org.br")
             password = st.text_input("🔒 Senha", type="password", placeholder="••••••••")
             st.markdown("<br>", unsafe_allow_html=True)
             
-            submit_login = st.form_submit_
+            submit_login = st.form_submit_button("➔ Acessar Sistema", use_container_width=True)
+            
+            if submit_login:
+                user = verificar_login(username, password)
+                if user:
+                    st.session_state["usuario_logado"] = {
+                        "id": user[0],
+                        "nome": user[1],
+                        "role": user[2]
+                    }
+                    st.success(f"Autenticado com sucesso. Bem-vindo(a), {user[1]}!")
+                    st.rerun()
+                else:
+                    st.error("Credenciais inválidas. Verifique o usuário e a senha fornecidos.")
+            
+            st.markdown("<p style='text-align:center; color:#94A3B8; font-size:0.8rem; margin-top:1rem;'>🔒 Acesso seguro</p>", unsafe_allow_html=True)
+
+def logout():
+    st.session_state["usuario_logado"] = None
+    st.rerun()
+
+if not st.session_state["usuario_logado"]:
+    login_screen()
+    st.stop()
+
+# ==========================================
+# INTERFACE PRINCIPAL
+# ==========================================
+user_info = st.session_state["usuario_logado"]
+
+st.sidebar.markdown(f"<div class='user-profile-card'><p style='font-size: 0.95rem; font-weight: 700;'>👤 {user_info['nome']}</p><p style='font-size: 0.8rem; opacity: 0.9;'>Perfil: <b>{user_info['role'].upper()}</b></p></div>", unsafe_allow_html=True)
+
+if st.sidebar.button("🚪 Encerrar Sessão", use_container_width=True):
+    logout()
+
+st.sidebar.divider()
+
+menu_options = ["📊 Dashboard & Relatórios", "🔄 Movimentação de Estoque"]
+if user_info["role"] == "admin":
+    menu_options.insert(0, "📦 Gestão de Produtos")
+    menu_options.append("👥 Gestão de Usuários")
+
+menu = st.sidebar.radio("Navegação do Sistema", menu_options)
+
+# ==========================================
+# FUNÇÕES DE EXPORTAÇÃO
+# ==========================================
+def gerar_excel_estilizado_bytes(df_exportar, nome_aba="Relatório"):
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+        df_exportar.to_excel(writer, index=False, sheet_name=nome_aba)
+        workbook = writer.book
+        worksheet = writer.sheets[nome_aba]
+        
+        header_fill = PatternFill(start_color="0D47A1", end_color="0D47A1", fill_type="solid")
+        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+        
+        thin_border = Border(
+            bottom=Side(style='thin', color='E0E0E0'),
+            left=Side(style='thin', color='F0F0F0'),
+            right=Side(style='thin', color='F0F0F0')
+        )
+        
+        colunas_lista = list(df_exportar.columns)
+        
+        for col_num, col_name in enumerate(colunas_lista, 1):
+            col_letter = get_column_letter(col_num)
+            cell = worksheet.cell(row=1, column=col_num)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            
+            nome_col_lower = str(col_name).lower()
+            is_moeda = ("preço" in nome_col_lower or "custo" in nome_col_lower or "valor" in nome_col_lower or "diferença preço" in nome_col_lower)
+            
+            for row_num in range(2, len(df_exportar) + 2):
+                data_cell = worksheet.cell(row=row_num, column=col_num)
+                data_cell.border = thin_border
+                
+                val = data_cell.value
+                if isinstance(val, (int, float)):
+                    if is_moeda:
+                        data_cell.number_format = 'R$ #,##0.00'
+                        data_cell.alignment = Alignment(horizontal="right", vertical="center")
+                    else:
+                        data_cell.alignment = Alignment(horizontal="center", vertical="center")
+                else:
+                    data_cell.alignment = Alignment(horizontal="left", vertical="center")
+
+            max_len = max(
+                len(str(col_name)),
+                max([len(str(worksheet.cell(row=r, column=col_num).value or '')) for r in range(2, len(df_exportar) + 2)], default=0)
+            )
+            worksheet.column_dimensions[col_letter].width = max(max_len + 5, 14)
+
+    return buffer.getvalue()
+
+def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    story = []
