@@ -136,7 +136,6 @@ if not st.session_state["usuario_logado"]:
             margin-bottom: 1.8rem;
         }
 
-        /* Forçar campos em estrutura vertical dentro do formulário Streamlit */
         div[data-testid='stForm'] {
             border: none !important;
             padding: 0 !important;
@@ -163,7 +162,6 @@ if not st.session_state["usuario_logado"]:
         }
     </style>"""
 else:
-    # CSS da Aplicação Interna Pós-Login
     css_code = """<style>
         header[data-testid="stHeader"] {
             display: none !important;
@@ -260,3 +258,88 @@ init_db()
 # AUTENTICAÇÃO E SESSÃO
 # ==========================================
 def verificar_login(username, password):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, nome, role FROM usuarios WHERE username = ? AND senha = ?", (username.lower().strip(), hash_password(password)))
+    user = cursor.fetchone()
+    conn.close()
+    return user
+
+def login_screen():
+    logo_html = f'<img src="data:image/png;base64,{img_base64}" alt="Logo">' if img_base64 else ''
+    
+    st.markdown(f"""
+        <div class="login-card">
+            <div class="login-banner">
+                {logo_html}
+                <h2>Gestão & Suprimentos</h2>
+                <p>Controle centralizado de compras, saídas de material e análise operacional.</p>
+            </div>
+            <div class="login-form-area">
+                <div class="login-title">Bem-vindo(a)</div>
+                <div class="login-subtitle">Acesse sua conta para continuar</div>
+    """, unsafe_allow_html=True)
+    
+    with st.form("login_form"):
+        username = st.text_input("✉️ E-mail ou Usuário", placeholder="usuario@fnp.org.br")
+        password = st.text_input("🔒 Senha", type="password", placeholder="••••••••")
+        
+        submit_login = st.form_submit_button("➔ Entrar no Sistema", use_container_width=True)
+        
+        if submit_login:
+            user = verificar_login(username, password)
+            if user:
+                st.session_state["usuario_logado"] = {
+                    "id": user[0],
+                    "nome": user[1],
+                    "role": user[2]
+                }
+                st.success(f"Autenticado com sucesso. Bem-vindo(a), {user[1]}!")
+                st.rerun()
+            else:
+                st.error("Credenciais inválidas. Verifique o usuário e a senha.")
+
+    st.markdown("""
+                <p style="text-align:center; color:#94A3B8; font-size:0.78rem; margin-top:1.5rem;">🔒 Conexão segura e encriptada</p>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+def logout():
+    st.session_state["usuario_logado"] = None
+    st.rerun()
+
+if not st.session_state["usuario_logado"]:
+    login_screen()
+    st.stop()
+
+# ==========================================
+# INTERFACE PRINCIPAL (SESSÃO AUTENTICADA)
+# ==========================================
+user_info = st.session_state["usuario_logado"]
+
+st.sidebar.markdown(f"<div class='user-profile-card'><p style='font-size: 0.95rem; font-weight: 700;'>👤 {user_info['nome']}</p><p style='font-size: 0.8rem; opacity: 0.9;'>Perfil: <b>{user_info['role'].upper()}</b></p></div>", unsafe_allow_html=True)
+
+if st.sidebar.button("🚪 Encerrar Sessão", use_container_width=True):
+    logout()
+
+st.sidebar.divider()
+
+menu_options = ["📊 Dashboard & Relatórios", "🔄 Movimentação de Estoque"]
+if user_info["role"] == "admin":
+    menu_options.insert(0, "📦 Gestão de Produtos")
+    menu_options.append("👥 Gestão de Usuários")
+
+menu = st.sidebar.radio("Navegação do Sistema", menu_options)
+
+# ==========================================
+# GERADOR DE RELATÓRIO PDF (REPORTLAB)
+# ==========================================
+def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+    story = []
+    
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=14, alignment=1, spaceAfter=8, textColor=colors.HexColor('#0D47A1'))
+    sub_style = ParagraphStyle('SubStyle', parent=styles['Normal'],
