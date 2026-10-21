@@ -15,13 +15,13 @@ import io
 # CONFIGURAÇÃO DA PÁGINA E ESTILOS CSS
 # ==========================================
 st.set_page_config(
-    page_title="Sistema de Gestão de Compras e Estoque",
-    page_icon="📋",
+    page_title="Sistema de Gestão de Compras e Estoque - FNP",
+    page_icon="📦",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Função para carregar a imagem local do GitHub e converter para Base64
+# Função para carregar imagem local do GitHub e converter para Base64
 def get_base64_of_bin_file(bin_file):
     if os.path.exists(bin_file):
         with open(bin_file, 'rb') as f:
@@ -32,18 +32,21 @@ def get_base64_of_bin_file(bin_file):
 img_name = "Sistema de Compras e Estoque.png"
 img_base64 = get_base64_of_bin_file(img_name)
 
-# Estilização CSS personalizada
+# URL da imagem de fundo de logística/estoque para o card central
+BG_WAREHOUSE_URL = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80"
+
+# Estilização Fiel ao Redesign
 CUSTOM_CSS = f"""
 <style>
-    /* Fundo da aplicação em tom cinza-azulado leve (#F5F8FC) */
+    /* Fundo da Tela */
     .stApp {{
-        background-color: #F5F8FC;
+        background-color: #FFFFFF;
         color: #103965;
     }}
     
-    /* Sidebar */
+    /* Sidebar com tom corporativo suave */
     [data-testid="stSidebar"] {{
-        background-color: #FFFFFF !important;
+        background-color: #F5F8FC !important;
         border-right: 1px solid #D7E3F1;
     }}
     
@@ -51,61 +54,49 @@ CUSTOM_CSS = f"""
         color: #103965 !important;
     }}
 
-    /* Estilo do Logo exibido no topo */
-    .logo-container {{
-        text-align: center;
-        margin-bottom: 1.5rem;
-    }}
-    .logo-img {{
-        max-width: 280px;
-        height: auto;
-        border-radius: 8px;
+    /* Card Moldura do Login (Fundo Foto de Estoque) */
+    .hero-container {{
+        background: url("{BG_WAREHOUSE_URL}") no-repeat center center;
+        background-size: cover;
+        border-radius: 24px;
+        padding: 3rem 1.5rem;
+        max-width: 580px;
+        margin: 1rem auto;
+        box-shadow: 0 15px 35px rgba(16, 57, 101, 0.15);
+        position: relative;
+        overflow: hidden;
     }}
 
-    /* Card de Login Compacto e Centralizado */
+    /* Card de Login Branco Interno */
     .login-card {{
         background-color: #FFFFFF !important;
-        padding: 2rem 1.8rem;
-        border-radius: 12px;
-        border: 1px solid #D7E3F1;
-        box-shadow: 0 10px 25px rgba(16, 57, 101, 0.10);
-        max-width: 420px;
-        margin: 0 auto;
-    }}
-    
-    .login-header {{
-        text-align: center;
-        margin-bottom: 1.5rem;
-    }}
-    .login-subhead {{
-        color: #5A9BE5;
-        font-size: 0.85rem;
-        font-weight: 700;
-        letter-spacing: 0.1em;
-        margin: 0;
-        text-transform: uppercase;
-    }}
-    .login-title {{
-        color: #103965;
-        font-size: 1.3rem;
-        font-weight: 900;
-        line-height: 1.2;
-        margin: 0.2rem 0;
-        text-transform: uppercase;
-    }}
-    .login-badge {{
-        display: inline-block;
-        background-color: #103965;
-        color: #FFFFFF;
-        font-weight: 700;
-        padding: 0.25rem 0.9rem;
-        border-radius: 15px;
-        font-size: 0.75rem;
-        letter-spacing: 0.05em;
-        margin-top: 0.3rem;
+        padding: 2.2rem 2rem;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        text-align: left;
     }}
 
-    /* Estilização dos Formulários */
+    .logo-img-login {{
+        max-width: 260px;
+        height: auto;
+        display: block;
+        margin: 0 auto 1.2rem auto;
+    }}
+
+    .welcome-title {{
+        color: #103965;
+        font-size: 1.4rem;
+        font-weight: 800;
+        margin: 0;
+    }}
+
+    .welcome-sub {{
+        color: #5A9BE5;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+    }}
+
+    /* Formulário Estilizado */
     div[data-testid="stForm"] {{
         background-color: transparent !important;
         border: none !important;
@@ -119,22 +110,30 @@ CUSTOM_CSS = f"""
         font-size: 0.88rem;
     }}
 
-    /* Botões Primários */
+    /* Estilização do Botão de Acesso Principal (Azul-Marinho) */
     .stButton>button {{
-        background-color: #5A9BE5 !important;
+        background-color: #103965 !important;
         color: #FFFFFF !important;
-        border-radius: 8px !important;
+        border-radius: 10px !important;
         font-weight: 700 !important;
-        padding: 0.55rem 1.2rem !important;
+        padding: 0.65rem 1.2rem !important;
         border: none !important;
         transition: all 0.2s ease !important;
-        text-transform: uppercase;
-        font-size: 0.9rem !important;
+        text-transform: none;
+        font-size: 0.95rem !important;
     }}
     .stButton>button:hover {{
-        background-color: #103965 !important;
+        background-color: #0A2544 !important;
         transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(16, 57, 101, 0.2);
+        box-shadow: 0 4px 12px rgba(16, 57, 101, 0.25);
+    }}
+
+    /* Texto de Acesso Seguro */
+    .secure-text {{
+        text-align: center;
+        color: #8898AA;
+        font-size: 0.8rem;
+        margin-top: 0.8rem;
     }}
 
     /* Card do Perfil na Sidebar */
@@ -151,7 +150,7 @@ CUSTOM_CSS = f"""
         color: #FFFFFF !important;
     }}
 
-    /* Títulos em Azul-Marinho */
+    /* Títulos e Elementos da Aplicação */
     h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {{
         color: #103965 !important;
         font-weight: 800;
@@ -250,34 +249,34 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
 def login_screen():
-    st.markdown("<br>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1.5, 1, 1.5])
+    col1, col2, col3 = st.columns([1, 2.2, 1])
     
     with col2:
-        # Exibe a imagem local como Logo centralizado
+        # Moldura Externa com Foto do Estoque
+        st.markdown("<div class='hero-container'>", unsafe_allow_html=True)
+        
+        # Card Branco Interno
+        st.markdown("<div class='login-card'>", unsafe_allow_html=True)
+        
         if img_base64:
             st.markdown(
-                f"<div class='logo-container'>"
-                f"<img src='data:image/png;base64,{img_base64}' class='logo-img' alt='Logo'>"
-                f"</div>",
+                f"<img src='data:image/png;base64,{img_base64}' class='logo-img-login' alt='Logo FNP'>",
                 unsafe_allow_html=True
             )
         else:
             st.markdown(
-                "<div class='login-header'>"
-                "<p class='login-subhead'>SISTEMA DE GESTÃO</p>"
-                "<h1 class='login-title'>DE COMPRAS E ESTOQUE</h1>"
-                "<div class='login-badge'>& SUPRIMENTOS</div>"
-                "</div>",
+                "<h2 style='text-align:center; color:#103965; margin-bottom:1rem;'>SISTEMA DE COMPRAS E ESTOQUE</h2>",
                 unsafe_allow_html=True
             )
+            
+        st.markdown("<p class='welcome-title'>Bem-vindo(a)!</p>", unsafe_allow_html=True)
+        st.markdown("<p class='welcome-sub'>Faça login para acessar o sistema.</p>", unsafe_allow_html=True)
         
-        # Caixa de formulário de login
         with st.form("login_form"):
-            username = st.text_input("E-mail ou Usuário", placeholder="usuario@fnp.org.br")
-            password = st.text_input("Senha", type="password", placeholder="••••••••")
+            username = st.text_input("✉️ E-mail ou Usuário", placeholder="usuario@fnp.org.br")
+            password = st.text_input("🔒 Senha", type="password", placeholder="••••••••")
             st.markdown("<br>", unsafe_allow_html=True)
-            submit_login = st.form_submit_button("Acessar Sistema", use_container_width=True)
+            submit_login = st.form_submit_button("➔ Acessar Sistema", use_container_width=True)
             
             if submit_login:
                 user = verificar_login(username, password)
@@ -291,6 +290,10 @@ def login_screen():
                     st.rerun()
                 else:
                     st.error("Credenciais inválidas. Verifique o usuário e a senha fornecidos.")
+        
+        st.markdown("<p class='secure-text'>🔒 Acesso seguro</p>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)  # Fim do card branco
+        st.markdown("</div>", unsafe_allow_html=True)  # Fim do hero container
 
 def logout():
     st.session_state["usuario_logado"] = None
@@ -306,20 +309,18 @@ if not st.session_state["usuario_logado"]:
 # ==========================================
 user_info = st.session_state["usuario_logado"]
 
-# Logo / Cabeçalho na Aplicação Logada
+# Cabeçalho na Aplicação Logada
 if img_base64:
     st.markdown(
-        f"<div class='logo-container' style='margin-bottom: 1rem;'>"
-        f"<img src='data:image/png;base64,{img_base64}' class='logo-img' style='max-width: 220px;' alt='Logo'>"
+        f"<div style='text-align: center; margin-bottom: 1rem;'>"
+        f"<img src='data:image/png;base64,{img_base64}' style='max-width: 220px; height: auto;' alt='Logo'>"
         f"</div>",
         unsafe_allow_html=True
     )
 else:
     st.markdown(
-        "<div style='background-color: #FFFFFF; border: 1px solid #D7E3F1; padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1.5rem;'>"
-        "<span style='color: #5A9BE5; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;'>SISTEMA DE GESTÃO</span>"
-        "<h2 style='color: #103965; font-size: 1.5rem; font-weight: 900; margin: 0.2rem 0; text-transform: uppercase;'>DE COMPRAS E ESTOQUE</h2>"
-        "<span style='background-color: #103965; color: #FFFFFF; font-weight: 700; padding: 0.2rem 0.8rem; border-radius: 12px; font-size: 0.75rem;'>& SUPRIMENTOS</span>"
+        "<div style='background-color: #F5F8FC; border: 1px solid #D7E3F1; padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1.5rem;'>"
+        "<h2 style='color: #103965; font-size: 1.5rem; font-weight: 900; margin: 0; text-transform: uppercase;'>SISTEMA DE GESTÃO DE COMPRAS E ESTOQUE</h2>"
         "</div>",
         unsafe_allow_html=True
     )
@@ -521,126 +522,4 @@ elif menu == "🔄 Movimentação de Estoque":
                 st.rerun()
 
 # ==========================================
-# 3. DASHBOARD E RELATÓRIO COMPARATIVO
-# ==========================================
-elif menu == "📊 Dashboard & Relatórios":
-    st.subheader("📊 Painel Comparativo & Exportação PDF")
-    st.caption("Comparação periódica de volume de compras e variações de valor.")
-    
-    conn = sqlite3.connect(DB_NAME)
-    df_mov = pd.read_sql_query("""
-        SELECT 
-            m.id, p.nome as produto, m.tipo, m.quantidade, m.preco_unitario,
-            strftime('%Y-%m', m.data_movimentacao) as mes_ano
-        FROM movimentacoes_estoque m
-        JOIN produtos p ON p.id = m.produto_id
-    """, conn)
-    conn.close()
-
-    if df_mov.empty:
-        st.info("Ainda não há lançamentos registrados para gerar comparativos.")
-    else:
-        meses_disponiveis = sorted(df_mov['mes_ano'].unique(), reverse=True)
-        
-        if len(meses_disponiveis) < 2:
-            st.warning("São necessários lançamentos em pelo menos dois meses diferentes para montar o comparativo de períodos.")
-            st.markdown("### Histórico de Lançamentos:")
-            st.dataframe(df_mov, use_container_width=True)
-        else:
-            col1, col2 = st.columns(2)
-            with col1:
-                mes_atual = st.selectbox("Selecione o Mês Recente (Atual)", meses_disponiveis, index=0)
-            with col2:
-                mes_anterior = st.selectbox("Selecione o Mês Base (Anterior)", meses_disponiveis, index=1 if len(meses_disponiveis) > 1 else 0)
-
-            # Agregação Mês Atual
-            df_atual = df_mov[df_mov['mes_ano'] == mes_atual].groupby('produto').agg(
-                qtd_atual=('quantidade', 'sum'),
-                preco_atual=('preco_unitario', 'mean')
-            ).reset_index()
-
-            # Agregação Mês Anterior
-            df_ant = df_mov[df_mov['mes_ano'] == mes_anterior].groupby('produto').agg(
-                qtd_ant=('quantidade', 'sum'),
-                preco_ant=('preco_unitario', 'mean')
-            ).reset_index()
-
-            # Merge e Cálculo das Diferenças
-            df_comp = pd.merge(df_atual, df_ant, on='produto', how='outer').fillna(0)
-            df_comp['Diferença Qtd'] = df_comp['qtd_atual'] - df_comp['qtd_ant']
-            df_comp['Diferença Preço'] = df_comp['preco_atual'] - df_comp['preco_ant']
-
-            df_comp.rename(columns={
-                'produto': 'Produto',
-                'qtd_ant': f'Qtd ({mes_anterior})',
-                'qtd_atual': f'Qtd ({mes_atual})',
-                'preco_ant': f'Preço ({mes_anterior})',
-                'preco_atual': f'Preço ({mes_atual})'
-            }, inplace=True)
-
-            # Cards de Métricas
-            st.subheader("📌 Indicadores de Variação")
-            m1, m2, m3 = st.columns(3)
-            total_dif_qtd = df_comp['Diferença Qtd'].sum()
-            media_dif_preco = df_comp['Diferença Preço'].mean()
-            
-            m1.metric("Variação de Volume", f"{total_dif_qtd:+} un")
-            m2.metric("Variação Média de Preço", f"R$ {media_dif_preco:+.2f}")
-            m3.metric("Itens Analisados", len(df_comp))
-
-            st.divider()
-            
-            st.subheader("📋 Tabela Analítica")
-            st.dataframe(df_comp, use_container_width=True)
-
-            # Exportação
-            st.divider()
-            st.subheader("📄 Emissão de Documento Oficial")
-            
-            pdf_data = gerar_pdf_bytes(df_comp, mes_atual, mes_anterior)
-            
-            st.download_button(
-                label="📥 Baixar Relatório Comparativo em PDF",
-                data=pdf_data,
-                file_name=f"relatorio_gestao_compras_{mes_anterior}_vs_{mes_atual}.pdf",
-                mime="application/pdf"
-            )
-
-# ==========================================
-# 4. GESTÃO DE USUÁRIOS (EXCLUSIVO ADMIN)
-# ==========================================
-elif menu == "👥 Gestão de Usuários":
-    st.subheader("👥 Controle de Acesso e Usuários")
-    st.caption("Gerenciamento de contas e atribuição de permissões no sistema.")
-    
-    with st.form("form_novo_usuario"):
-        st.subheader("Cadastrar Novo Usuário")
-        novo_nome = st.text_input("Nome Completo")
-        novo_username = st.text_input("E-mail / Usuário de Acesso")
-        nova_senha = st.text_input("Senha", type="password")
-        novo_role = st.selectbox("Nível de Permissão", ["operador", "admin"])
-        
-        submit_user = st.form_submit_button("Cadastrar Usuário")
-        if submit_user:
-            if not novo_nome or not novo_username or not nova_senha:
-                st.error("Todos os campos do formulário devem ser preenchidos.")
-            else:
-                try:
-                    conn = sqlite3.connect(DB_NAME)
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        "INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)",
-                        (novo_nome.strip(), novo_username.strip().lower(), hash_password(nova_senha), novo_role)
-                    )
-                    conn.commit()
-                    conn.close()
-                    st.success(f"Acesso para '{novo_username}' configurado com sucesso!")
-                except sqlite3.IntegrityError:
-                    st.error("O e-mail/usuário informado já está cadastrado no sistema.")
-
-    st.divider()
-    st.subheader("Usuários Ativos")
-    conn = sqlite3.connect(DB_NAME)
-    users_df = pd.read_sql_query("SELECT id, nome, username, role FROM usuarios", conn)
-    conn.close()
-    st.dataframe(users_df, use_container_width=True)
+#
