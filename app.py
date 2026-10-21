@@ -37,10 +37,9 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
 # ==========================================
-# ESTILIZAÇÃO CSS (LAYOUT HORIZONTAL CONTROLADO)
+# ESTILIZAÇÃO CSS (BLOCO HORIZONTAL UNIFICADO)
 # ==========================================
 if not st.session_state["usuario_logado"]:
-    # CSS exclusivo da Tela de Login (Formato Horizontal Elegante)
     css_code = """<style>
         header[data-testid="stHeader"] {
             display: none !important;
@@ -61,41 +60,78 @@ if not st.session_state["usuario_logado"]:
             justify-content: center !important;
         }
 
-        /* Cartão de Login Horizontal */
-        div[data-testid='stForm'] {
-            background-color: #FFFFFF !important;
-            padding: 2.2rem 2.5rem 1.8rem 2.5rem !important;
-            border-radius: 18px !important;
-            border: 1px solid #E2E8F0 !important;
-            box-shadow: 0 12px 32px rgba(0, 33, 113, 0.08) !important;
-            width: 620px !important;
-            max-width: 92vw !important;
-            margin: auto !important;
+        /* Moldura Horizontal Unificada */
+        .login-horizontal-box {
+            display: flex;
+            flex-direction: row;
+            width: 780px;
+            max-width: 92vw;
+            background: #FFFFFF;
+            border-radius: 18px;
+            box-shadow: 0 12px 36px rgba(0, 33, 113, 0.08);
+            border: 1px solid #E2E8F0;
+            overflow: hidden;
+            margin: auto;
         }
 
-        .login-logo-img {
-            max-width: 210px !important;
-            width: 100% !important;
-            height: auto !important;
-            display: block !important;
-            margin: 0 auto 1rem auto !important;
+        /* Coluna da Esquerda (Marca / Logo) */
+        .login-left-brand {
+            flex: 1;
+            background-color: #FAFCFF;
+            border-right: 1px solid #EDF2F7;
+            padding: 2.2rem 1.8rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
         }
 
-        .login-welcome-title {
-            color: #0D1B2A;
-            font-size: 1.4rem;
-            font-weight: 800;
-            margin: 0 0 0.2rem 0;
+        .login-left-brand img {
+            max-width: 200px;
+            width: 100%;
+            height: auto;
+            margin-bottom: 1rem;
+        }
+
+        .login-left-brand h3 {
+            color: #0D47A1;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            text-align: center;
         }
 
-        .login-welcome-sub {
+        /* Coluna da Direita (Campos do Formulário) */
+        .login-right-form {
+            flex: 1.2;
+            padding: 2.2rem 2.2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .login-title {
+            color: #0D1B2A;
+            font-size: 1.35rem;
+            font-weight: 800;
+            margin: 0 0 0.25rem 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .login-sub {
             color: #64748B;
-            font-size: 0.88rem;
-            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            margin-bottom: 1.2rem;
             font-weight: 500;
-            text-align: center;
+        }
+
+        /* Reset do stForm para integrar perfeitamente dentro da coluna direita */
+        div[data-testid='stForm'] {
+            border: none !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            background: transparent !important;
         }
 
         div[data-testid='stForm'] button[kind='secondaryFormSubmit'] {
@@ -115,7 +151,6 @@ if not st.session_state["usuario_logado"]:
         }
     </style>"""
 else:
-    # CSS da Aplicação Interna Pós-Login
     css_code = """<style>
         header[data-testid="stHeader"] {
             display: none !important;
@@ -220,22 +255,23 @@ def verificar_login(username, password):
     return user
 
 def login_screen():
+    logo_img_html = f"<img src='data:image/png;base64,{img_base64}' alt='Logo FNP'>" if img_base64 else "<h4>📦</h4>"
+    
+    st.markdown(f"""
+        <div class="login-horizontal-box">
+            <div class="login-left-brand">
+                {logo_img_html}
+                <h3>Gestão de Compras & Estoque</h3>
+            </div>
+            <div class="login-right-form">
+                <p class="login-title">Bem-vindo(a)!</p>
+                <p class="login-sub">Acesse sua conta para continuar.</p>
+    """, unsafe_allow_html=True)
+    
     with st.form("login_form"):
-        if img_base64:
-            st.markdown(f"<img src='data:image/png;base64,{img_base64}' class='login-logo-img' alt='Logo FNP'>", unsafe_allow_html=True)
-        else:
-            st.markdown("<h4 style='text-align:center; color:#0D47A1; margin-bottom:1rem;'>GESTÃO DE ESTOQUE</h4>", unsafe_allow_html=True)
-            
-        st.markdown("<p class='login-welcome-title'>Bem-vindo(a)!</p>", unsafe_allow_html=True)
-        st.markdown("<p class='login-welcome-sub'>Acesse sua conta para continuar.</p>", unsafe_allow_html=True)
+        username = st.text_input("✉️ E-mail ou Usuário", placeholder="usuario@fnp.org.br")
+        password = st.text_input("🔒 Senha", type="password", placeholder="••••••••")
         
-        # Disposição horizontal dos campos
-        col1, col2 = st.columns(2)
-        with col1:
-            username = st.text_input("✉️ E-mail ou Usuário", placeholder="usuario@fnp.org.br")
-        with col2:
-            password = st.text_input("🔒 Senha", type="password", placeholder="••••••••")
-            
         submit_login = st.form_submit_button("➔ Acessar Sistema", use_container_width=True)
         
         if submit_login:
@@ -250,8 +286,12 @@ def login_screen():
                 st.rerun()
             else:
                 st.error("Credenciais inválidas. Verifique o usuário e a senha fornecidos.")
-        
-        st.markdown("<p class='secure-footer' style='text-align:center; color:#94A3B8; font-size:0.78rem; margin-top:0.8rem;'>🔒 Acesso seguro</p>", unsafe_allow_html=True)
+
+    st.markdown("""
+                <p style="text-align:center; color:#94A3B8; font-size:0.78rem; margin-top:0.8rem;">🔒 Conexão segura</p>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
 
 def logout():
     st.session_state["usuario_logado"] = None
@@ -408,122 +448,4 @@ elif menu == "🔄 Movimentação de Estoque":
         col1, col2 = st.columns(2)
         with col1:
             prod_nome = st.selectbox("Selecione o Produto", produtos_df['nome'].tolist())
-            prod_info = produtos_df[produtos_df['nome'] == prod_nome].iloc[0]
-            st.info(f"**Estoque Atual:** {prod_info['quantidade_estoque']} unidades | **Preço Base:** R$ {prod_info['preco_custo']:.2f}")
-
-        with col2:
-            tipo_mov = st.radio("Tipo de Lançamento", ["ENTRADA (Compra/Aporte)", "SAIDA (Baixa/Consumo)"])
-            quantidade = st.number_input("Quantidade", min_value=1, step=1)
-            preco_unitario = st.number_input("Preço Unitário da Operação (R$)", min_value=0.01, value=float(prod_info['preco_custo']), format="%.2f")
-
-        if st.button("Registrar Operação"):
-            tipo = "ENTRADA" if "ENTRADA" in tipo_mov else "SAIDA"
-            
-            if tipo == "SAIDA" and quantidade > prod_info['quantidade_estoque']:
-                st.error("Operação cancelada: a quantidade solicitada excede o saldo em estoque.")
-            else:
-                conn = sqlite3.connect(DB_NAME)
-                cursor = conn.cursor()
-                
-                cursor.execute("INSERT INTO movimentacoes_estoque (produto_id, tipo, quantidade, preco_unitario) VALUES (?, ?, ?, ?)", (int(prod_info['id']), tipo, quantidade, preco_unitario))
-                
-                nova_qtd = prod_info['quantidade_estoque'] + quantidade if tipo == "ENTRADA" else prod_info['quantidade_estoque'] - quantidade
-                cursor.execute("UPDATE produtos SET quantidade_estoque = ? WHERE id = ?", (nova_qtd, int(prod_info['id'])))
-                
-                conn.commit()
-                conn.close()
-                st.success("Movimentação registrada com sucesso!")
-                st.rerun()
-
-# ==========================================
-# 3. DASHBOARD E RELATÓRIO COMPARATIVO
-# ==========================================
-elif menu == "📊 Dashboard & Relatórios":
-    st.subheader("📊 Painel Comparativo & Exportação PDF")
-    st.caption("Comparação periódica de volume de compras e variações de valor.")
-    
-    conn = sqlite3.connect(DB_NAME)
-    df_mov = pd.read_sql_query("SELECT m.id, p.nome as produto, m.tipo, m.quantidade, m.preco_unitario, strftime('%Y-%m', m.data_movimentacao) as mes_ano FROM movimentacoes_estoque m JOIN produtos p ON p.id = m.produto_id", conn)
-    conn.close()
-
-    if df_mov.empty:
-        st.info("Ainda não há lançamentos registrados para gerar comparativos.")
-    else:
-        meses_disponiveis = sorted(df_mov['mes_ano'].unique(), reverse=True)
-        
-        if len(meses_disponiveis) < 2:
-            st.warning("São necessários lançamentos em pelo menos dois meses diferentes para montar o comparativo de períodos.")
-            st.markdown("### Histórico de Lançamentos:")
-            st.dataframe(df_mov, use_container_width=True)
-        else:
-            col1, col2 = st.columns(2)
-            with col1:
-                mes_atual = st.selectbox("Selecione o Mês Recente (Atual)", meses_disponiveis, index=0)
-            with col2:
-                mes_anterior = st.selectbox("Selecione o Mês Base (Anterior)", meses_disponiveis, index=1 if len(meses_disponiveis) > 1 else 0)
-
-            df_atual = df_mov[df_mov['mes_ano'] == mes_atual].groupby('produto').agg(qtd_atual=('quantidade', 'sum'), preco_atual=('preco_unitario', 'mean')).reset_index()
-            df_ant = df_mov[df_mov['mes_ano'] == mes_anterior].groupby('produto').agg(qtd_ant=('quantidade', 'sum'), preco_ant=('preco_unitario', 'mean')).reset_index()
-
-            df_comp = pd.merge(df_atual, df_ant, on='produto', how='outer').fillna(0)
-            df_comp['Diferença Qtd'] = df_comp['qtd_atual'] - df_comp['qtd_ant']
-            df_comp['Diferença Preço'] = df_comp['preco_atual'] - df_comp['preco_ant']
-
-            df_comp.rename(columns={'produto': 'Produto', 'qtd_ant': f'Qtd ({mes_anterior})', 'qtd_atual': f'Qtd ({mes_atual})', 'preco_ant': f'Preço ({mes_anterior})', 'preco_atual': f'Preço ({mes_atual})'}, inplace=True)
-
-            st.subheader("📌 Indicadores de Variação")
-            m1, m2, m3 = st.columns(3)
-            total_dif_qtd = df_comp['Diferença Qtd'].sum()
-            media_dif_preco = df_comp['Diferença Preço'].mean()
-            
-            m1.metric("Variação de Volume", f"{total_dif_qtd:+} un")
-            m2.metric("Variação Média de Preço", f"R$ {media_dif_preco:+.2f}")
-            m3.metric("Itens Analisados", len(df_comp))
-
-            st.divider()
-            st.subheader("📋 Tabela Analítica")
-            st.dataframe(df_comp, use_container_width=True)
-
-            st.divider()
-            st.subheader("📄 Emissão de Documento Oficial")
-            pdf_data = gerar_pdf_bytes(df_comp, mes_atual, mes_anterior)
-            st.download_button(label="📥 Baixar Relatório Comparativo em PDF", data=pdf_data, file_name=f"relatorio_gestao_compras_{mes_anterior}_vs_{mes_atual}.pdf", mime="application/pdf")
-
-# ==========================================
-# 4. GESTÃO DE USUÁRIOS
-# ==========================================
-elif menu == "👥 Gestão de Usuários":
-    st.subheader("👥 Controle de Acesso e Usuários")
-    st.caption("Gerenciamento de contas e atribuição de permissões no sistema.")
-    
-    with st.form("form_novo_usuario"):
-        st.subheader("Cadastrar Novo Usuário")
-        c1, c2 = st.columns(2)
-        with c1:
-            novo_nome = st.text_input("Nome Completo")
-            nova_senha = st.text_input("Senha", type="password")
-        with c2:
-            novo_username = st.text_input("E-mail / Usuário de Acesso")
-            novo_role = st.selectbox("Nível de Permissão", ["operador", "admin"])
-        
-        submit_user = st.form_submit_button("👤 Cadastrar Usuário")
-        if submit_user:
-            if not novo_nome or not novo_username or not nova_senha:
-                st.error("Todos os campos do formulário devem ser preenchidos.")
-            else:
-                try:
-                    conn = sqlite3.connect(DB_NAME)
-                    cursor = conn.cursor()
-                    cursor.execute("INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)", (novo_nome.strip(), novo_username.strip().lower(), hash_password(nova_senha), novo_role))
-                    conn.commit()
-                    conn.close()
-                    st.success(f"Acesso para '{novo_username}' configurado com sucesso!")
-                except sqlite3.IntegrityError:
-                    st.error("O e-mail/usuário informado já está cadastrado no sistema.")
-
-    st.divider()
-    st.subheader("Usuários Ativos")
-    conn = sqlite3.connect(DB_NAME)
-    users_df = pd.read_sql_query("SELECT id, nome, username, role FROM usuarios", conn)
-    conn.close()
-    st.dataframe(users_df, use_container_width=True)
+            prod_info = produtos_df
