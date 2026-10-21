@@ -21,7 +21,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Função para carregar imagem local do GitHub e converter para Base64
+# Função para carregar a imagem local do GitHub e converter para Base64
 def get_base64_of_bin_file(bin_file):
     if os.path.exists(bin_file):
         with open(bin_file, 'rb') as f:
@@ -32,28 +32,34 @@ def get_base64_of_bin_file(bin_file):
 img_name = "Sistema de Compras e Estoque.png"
 img_base64 = get_base64_of_bin_file(img_name)
 
-if img_base64:
-    bg_style = f'background: linear-gradient(rgba(255, 255, 255, 0.90), rgba(255, 255, 255, 0.90)), url("data:image/png;base64,{img_base64}") no-repeat center center fixed; background-size: cover;'
-else:
-    bg_style = "background-color: #FFFFFF;"
-
-# Customização CSS Ajustada (Caixa Menor e Design Limpo)
+# Estilização CSS personalizada
 CUSTOM_CSS = f"""
 <style>
-    /* Imagem de Fundo da Aplicação com Overlay Suave */
+    /* Fundo da aplicação em tom cinza-azulado leve (#F5F8FC) */
     .stApp {{
-        {bg_style}
+        background-color: #F5F8FC;
         color: #103965;
     }}
     
     /* Sidebar */
     [data-testid="stSidebar"] {{
-        background-color: rgba(245, 248, 252, 0.95) !important;
+        background-color: #FFFFFF !important;
         border-right: 1px solid #D7E3F1;
     }}
     
     [data-testid="stSidebar"] * {{
         color: #103965 !important;
+    }}
+
+    /* Estilo do Logo exibido no topo */
+    .logo-container {{
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }}
+    .logo-img {{
+        max-width: 280px;
+        height: auto;
+        border-radius: 8px;
     }}
 
     /* Card de Login Compacto e Centralizado */
@@ -62,7 +68,7 @@ CUSTOM_CSS = f"""
         padding: 2rem 1.8rem;
         border-radius: 12px;
         border: 1px solid #D7E3F1;
-        box-shadow: 0 10px 25px rgba(16, 57, 101, 0.12);
+        box-shadow: 0 10px 25px rgba(16, 57, 101, 0.10);
         max-width: 420px;
         margin: 0 auto;
     }}
@@ -81,7 +87,7 @@ CUSTOM_CSS = f"""
     }}
     .login-title {{
         color: #103965;
-        font-size: 1.4rem;
+        font-size: 1.3rem;
         font-weight: 900;
         line-height: 1.2;
         margin: 0.2rem 0;
@@ -244,20 +250,29 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
 def login_screen():
-    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1.5, 1, 1.5])
     
     with col2:
-        st.markdown(
-            "<div class='login-card'>"
-            "<div class='login-header'>"
-            "<p class='login-subhead'>SISTEMA DE GESTÃO</p>"
-            "<h1 class='login-title'>DE COMPRAS E ESTOQUE</h1>"
-            "<div class='login-badge'>& SUPRIMENTOS</div>"
-            "</div>",
-            unsafe_allow_html=True
-        )
+        # Exibe a imagem local como Logo centralizado
+        if img_base64:
+            st.markdown(
+                f"<div class='logo-container'>"
+                f"<img src='data:image/png;base64,{img_base64}' class='logo-img' alt='Logo'>"
+                f"</div>",
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                "<div class='login-header'>"
+                "<p class='login-subhead'>SISTEMA DE GESTÃO</p>"
+                "<h1 class='login-title'>DE COMPRAS E ESTOQUE</h1>"
+                "<div class='login-badge'>& SUPRIMENTOS</div>"
+                "</div>",
+                unsafe_allow_html=True
+            )
         
+        # Caixa de formulário de login
         with st.form("login_form"):
             username = st.text_input("E-mail ou Usuário", placeholder="usuario@fnp.org.br")
             password = st.text_input("Senha", type="password", placeholder="••••••••")
@@ -276,8 +291,6 @@ def login_screen():
                     st.rerun()
                 else:
                     st.error("Credenciais inválidas. Verifique o usuário e a senha fornecidos.")
-        
-        st.markdown("</div>", unsafe_allow_html=True)
 
 def logout():
     st.session_state["usuario_logado"] = None
@@ -293,15 +306,23 @@ if not st.session_state["usuario_logado"]:
 # ==========================================
 user_info = st.session_state["usuario_logado"]
 
-# Banner do Topo na Aplicação Logada
-st.markdown(
-    "<div style='background-color: rgba(245, 248, 252, 0.95); border: 1px solid #D7E3F1; padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1.5rem;'>"
-    "<span style='color: #5A9BE5; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;'>SISTEMA DE GESTÃO</span>"
-    "<h2 style='color: #103965; font-size: 1.5rem; font-weight: 900; margin: 0.2rem 0; text-transform: uppercase;'>DE COMPRAS E ESTOQUE</h2>"
-    "<span style='background-color: #103965; color: #FFFFFF; font-weight: 700; padding: 0.2rem 0.8rem; border-radius: 12px; font-size: 0.75rem;'>& SUPRIMENTOS</span>"
-    "</div>",
-    unsafe_allow_html=True
-)
+# Logo / Cabeçalho na Aplicação Logada
+if img_base64:
+    st.markdown(
+        f"<div class='logo-container' style='margin-bottom: 1rem;'>"
+        f"<img src='data:image/png;base64,{img_base64}' class='logo-img' style='max-width: 220px;' alt='Logo'>"
+        f"</div>",
+        unsafe_allow_html=True
+    )
+else:
+    st.markdown(
+        "<div style='background-color: #FFFFFF; border: 1px solid #D7E3F1; padding: 1rem; border-radius: 10px; text-align: center; margin-bottom: 1.5rem;'>"
+        "<span style='color: #5A9BE5; font-size: 0.85rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;'>SISTEMA DE GESTÃO</span>"
+        "<h2 style='color: #103965; font-size: 1.5rem; font-weight: 900; margin: 0.2rem 0; text-transform: uppercase;'>DE COMPRAS E ESTOQUE</h2>"
+        "<span style='background-color: #103965; color: #FFFFFF; font-weight: 700; padding: 0.2rem 0.8rem; border-radius: 12px; font-size: 0.75rem;'>& SUPRIMENTOS</span>"
+        "</div>",
+        unsafe_allow_html=True
+    )
 
 # Card de Perfil na Sidebar
 st.sidebar.markdown(
