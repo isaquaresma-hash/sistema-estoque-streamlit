@@ -4,7 +4,7 @@ import pandas as pd
 import hashlib
 import base64
 import os
-from datetime import datetime, date
+from datetime import datetime
 from io import BytesIO
 
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
@@ -31,26 +31,13 @@ def get_db_connection():
     return sqlite3.connect(DB_NAME, check_same_thread=False, timeout=15)
 
 # ==========================================
-# CARREGAMENTO DE LOGO
-# ==========================================
-def get_base64_of_bin_file(bin_file):
-    if os.path.exists(bin_file):
-        with open(bin_file, 'rb') as f:
-            data = f.read()
-        return base64.b64encode(data).decode()
-    return None
-
-img_name = "Sistema de Compras e Estoque.png"
-img_base64 = get_base64_of_bin_file(img_name)
-
-# ==========================================
 # ESTILIZAÇÃO CSS CUSTOMIZADA
 # ==========================================
 css_code = """<style>
     header[data-testid="stHeader"] { display: none !important; }
     [data-testid='stAppViewContainer'] { background-color: #F8FAFC !important; }
     .main .block-container {
-        padding-top: 1.5rem !important;
+        padding-top: 2rem !important;
         padding-bottom: 2rem !important;
         max-width: 1000px !important;
     }
@@ -158,179 +145,36 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome TEXT NOT NULL,
-            username TEXT UNIQUE NOT NULL,
-            senha TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'solicitante',
-            setor TEXT DEFAULT 'Geral',
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nome TEXT NOT NULL,
+                username TEXT UNIQUE NOT NULL,
+                senha TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'solicitante',
+                setor TEXT DEFAULT 'Geral',
+                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
-    # Garante migração de colunas em banco legado existente
-    cursor.execute("PRAGMA table_info(usuarios)")
-    colunas_existentes = [col[1] for col in cursor.fetchall()]
-    if "role" not in colunas_existentes:
-        cursor.execute("ALTER TABLE usuarios ADD COLUMN role TEXT NOT NULL DEFAULT 'solicitante'")
-    if "setor" not in colunas_existentes:
-        cursor.execute("ALTER TABLE usuarios ADD COLUMN setor TEXT DEFAULT 'Geral'")
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS materiais (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            codigo TEXT UNIQUE NOT NULL,
-            descricao TEXT NOT NULL,
-            categoria TEXT NOT NULL,
-            unidade TEXT NOT NULL,
-            marca_ref TEXT,
-            preco_custo REAL NOT NULL DEFAULT 0.0,
-            quantidade_estoque INTEGER NOT NULL DEFAULT 0,
-            estoque_minimo INTEGER NOT NULL DEFAULT 5,
-            localizacao TEXT,
-            lote TEXT,
-            validade DATE,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS fornecedores (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            cnpj TEXT UNIQUE NOT NULL,
-            razao_social TEXT NOT NULL,
-            nome_fantasia TEXT,
-            contato_nome TEXT,
-            telefone TEXT,
-            email TEXT,
-            condicoes_comerciais TEXT,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS requisicoes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            solicitante_id INTEGER,
-            setor TEXT NOT NULL,
-            material_id INTEGER,
-            quantidade INTEGER NOT NULL,
-            justificativa TEXT NOT NULL,
-            prioridade TEXT CHECK(prioridade IN ('Baixa', 'Média', 'Alta', 'Urgente')),
-            status TEXT CHECK(status IN ('Pendente', 'Aprovada', 'Rejeitada', 'Em Cotação', 'Atendida')) DEFAULT 'Pendente',
-            aprovador_id INTEGER,
-            data_aprovacao TIMESTAMP,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(solicitante_id) REFERENCES usuarios(id),
-            FOREIGN KEY(material_id) REFERENCES materiais(id),
-            FOREIGN KEY(aprovador_id) REFERENCES usuarios(id)
-        )
-    """)
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS cotacoes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            requisicao_id INTEGER,
-            fornecedor_id INTEGER,
-            preco_unitario REAL NOT NULL,
-            prazo_entrega_dias INTEGER,
-            observacao TEXT,
-            selecionado INTEGER DEFAULT 0,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(requisicao_id) REFERENCES requisicoes(id),
-            FOREIGN KEY(fornecedor_id) REFERENCES fornecedores(id)
-        )
-    """)
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS pedidos_compra (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            requisicao_id INTEGER,
-            cotacao_id INTEGER,
-            fornecedor_id INTEGER,
-            material_id INTEGER,
-            quantidade INTEGER NOT NULL,
-            preco_unitario REAL NOT NULL,
-            valor_total REAL NOT NULL,
-            status TEXT CHECK(status IN ('Emitido', 'Em Transporte', 'Concluído', 'Cancelado')) DEFAULT 'Emitido',
-            usuario_id INTEGER,
-            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(requisicao_id) REFERENCES requisicoes(id),
-            FOREIGN KEY(cotacao_id) REFERENCES cotacoes(id),
-            FOREIGN KEY(fornecedor_id) REFERENCES fornecedores(id),
-            FOREIGN KEY(material_id) REFERENCES materiais(id),
-            FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
-        )
-    """)
-    
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS recebimentos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            pedido_id INTEGER,
-            numero_nota_fiscal TEXT NOT NULL,
-            quantidade_recebida INTEGER NOT NULL,
-            tem_divergencia INTEGER DEFAULT 0,
-            observacao_divergencia TEXT,
-            responsavel_id INTEGER,
-            data_recebimento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(pedido_id) REFERENCES pedidos_compra(id),
-            FOREIGN KEY(responsavel_id) REFERENCES usuarios(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS movimentacoes_estoque (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            material_id INTEGER,
-            tipo TEXT CHECK(tipo IN ('ENTRADA', 'SAIDA', 'AJUSTE', 'TRANSFERENCIA')),
-            quantidade INTEGER NOT NULL,
-            preco_unitario REAL NOT NULL,
-            motivo TEXT,
-            usuario_id INTEGER,
-            data_movimentacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(material_id) REFERENCES materiais(id),
-            FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS entregas (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            requisicao_id INTEGER,
-            material_id INTEGER,
-            quantidade INTEGER NOT NULL,
-            setor_destino TEXT NOT NULL,
-            responsavel_retirada TEXT NOT NULL,
-            usuario_entrega_id INTEGER,
-            data_entrega TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(requisicao_id) REFERENCES requisicoes(id),
-            FOREIGN KEY(material_id) REFERENCES materiais(id),
-            FOREIGN KEY(usuario_entrega_id) REFERENCES usuarios(id)
-        )
-    """)
-    
-    cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'admin'")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO usuarios (nome, username, senha, role, setor) VALUES (?, ?, ?, ?, ?)",
-                       ("Administrador Geral", "admin", hash_password("admin123"), "admin", "TI"))
-
-    cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'roze.peres@fnp.org.br'")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO usuarios (nome, username, senha, role, setor) VALUES (?, ?, ?, ?, ?)",
-                       ("Roze Peres", "roze.peres@fnp.org.br", hash_password("fnp2026"), "admin", "Diretoria"))
-
-    cursor.execute("SELECT COUNT(*) FROM materiais")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO materiais (codigo, descricao, categoria, unidade, quantidade_estoque, preco_custo) VALUES ('MAT-01', 'Papel A4', 'escritório', 'Resma', 35, 25.0)")
-        cursor.execute("INSERT INTO materiais (codigo, descricao, categoria, unidade, quantidade_estoque, preco_custo) VALUES ('MAT-02', 'Caneta azul', 'escritório', 'Unidade', 120, 2.50)")
-        cursor.execute("INSERT INTO materiais (codigo, descricao, categoria, unidade, quantidade_estoque, preco_custo) VALUES ('MAT-03', 'Detergente', 'limpeza', 'Frasco', 18, 4.80)")
-
-    conn.commit()
-    conn.close()
-
-# Executa e
+        cursor.execute("PRAGMA table_info(usuarios)")
+        colunas_existentes = [col[1] for col in cursor.fetchall()]
+        if "role" not in colunas_existentes:
+            cursor.execute("ALTER TABLE usuarios ADD COLUMN role TEXT NOT NULL DEFAULT 'solicitante'")
+        if "setor" not in colunas_existentes:
+            cursor.execute("ALTER TABLE usuarios ADD COLUMN setor TEXT DEFAULT 'Geral'")
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS materiais (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo TEXT UNIQUE NOT NULL,
+                descricao TEXT NOT NULL,
+                categoria TEXT NOT NULL,
+                unidade TEXT NOT NULL,
+                marca_ref TEXT,
+                preco_custo REAL NOT NULL DEFAULT 0.0,
+                quantidade_estoque INTEGER NOT NULL DEFAULT 0
