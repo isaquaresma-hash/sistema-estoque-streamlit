@@ -64,6 +64,11 @@ css_code = """<style>
         color: #103965 !important;
     }
 
+    /* Ocultar a barra de ferramentas flutuante sobre tabelas/dataframes */
+    [data-testid="stElementToolbar"] {
+        display: none !important;
+    }
+
     /* Container de Login centralizado e expandido */
     .login-container {
         display: flex;
@@ -248,10 +253,10 @@ if user_info["role"] == "admin":
 menu = st.sidebar.radio("Navegação do Sistema", menu_options)
 
 # ==========================================
-# FUNÇÃO DE EXPORTAÇÃO EXCEL (NOVA ESTRUTURA EXACTA DO EXEMPLO)
+# FUNÇÃO DE EXPORTAÇÃO EXCEL
 # ==========================================
 def gerar_excel_estilizado_bytes(df_exportar, nome_aba="Relatório"):
-    """Gera o arquivo Excel em memória utilizando a mesma estrutura do modelo enviado, em tom Azul (#0D47A1)."""
+    """Gera o arquivo Excel em memória utilizando tom Azul (#0D47A1)."""
     buffer = BytesIO()
     
     with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
@@ -487,7 +492,6 @@ elif menu == "📊 Dashboard & Relatórios":
             st.markdown("### Histórico de Lançamentos:")
             st.dataframe(df_mov, use_container_width=True)
             
-            # Exportação utilizando o novo gerador Excel
             excel_historico = gerar_excel_estilizado_bytes(df_mov, nome_aba="Histórico")
             st.download_button(
                 label="📥 Baixar Histórico Geral (.xlsx)",
