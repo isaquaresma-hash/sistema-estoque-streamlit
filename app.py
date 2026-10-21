@@ -1,5 +1,5 @@
 # ==========================================
-# ESTILIZAÇÃO CSS (CORRIGIDA)
+# ESTILIZAÇÃO CSS (DEFINIR A VARIÁVEL PRIMEIRO)
 # ==========================================
 css_code = """<style>
     /* Ocultar o cabeçalho superior nativo do Streamlit */
@@ -26,7 +26,7 @@ css_code = """<style>
         color: #103965 !important;
     }
 
-    /* Ajuste das colunas centrais no Streamlit para compactar o formulário */
+    /* Ajuste do formulário de login compacto e centralizado */
     [data-testid="column"] div[data-testid="stForm"] {
         background-color: #FFFFFF !important;
         padding: 1.5rem 1.5rem 1.2rem 1.5rem !important;
@@ -91,4 +91,6 @@ css_code = """<style>
         color: #FFFFFF !important;
     }
 </style>"""
+
+# Aplica o CSS APÓS definir a variável css_code
 st.markdown(css_code, unsafe_allow_html=True)
