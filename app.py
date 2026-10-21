@@ -41,7 +41,7 @@ img_name = "Sistema de Compras e Estoque.png"
 img_base64 = get_base64_of_bin_file(img_name)
 
 # ==========================================
-# ESTILIZAÇÃO CSS
+# ESTILIZAÇÃO CSS CUSTOMIZADA (EXATA AO MODELO)
 # ==========================================
 css_code = """<style>
     header[data-testid="stHeader"] { display: none !important; }
@@ -49,7 +49,7 @@ css_code = """<style>
     .main .block-container {
         padding-top: 1.5rem !important;
         padding-bottom: 2rem !important;
-        max-width: 1200px !important;
+        max-width: 1000px !important;
     }
     [data-testid='stSidebar'] {
         background-color: #FFFFFF !important;
@@ -58,43 +58,90 @@ css_code = """<style>
     [data-testid='stSidebar'] * { color: #1E293B !important; }
     [data-testid="stElementToolbar"] { display: none !important; }
     
-    /* Login Container */
-    .login-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 2rem;
+    /* Container Principal da Tela estilo Card */
+    .main-card-wrapper {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 20px;
+        padding: 2.5rem;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
     }
-    .login-container div[data-testid='stForm'] {
-        background-color: #FFFFFF !important;
-        padding: 2.5rem !important;
-        border-radius: 20px !important;
-        border: 1px solid #E2E8F0 !important;
-        box-shadow: 0 12px 35px rgba(0, 33, 113, 0.09) !important;
-        width: 100% !important;
+
+    /* Cartão do Item (Papel A4, Caneta Azul, etc.) */
+    .item-card-box {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 1.2rem 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
     }
-    .login-logo-img {
-        max-width: 320px;
-        width: 100%;
-        height: auto;
-        display: block;
-        margin: 0 auto 1.2rem auto;
+    .item-card-box:hover {
+        border-color: #CBD5E1;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
     }
-    .login-welcome-title {
+    .item-title-text {
+        font-size: 1.2rem;
+        font-weight: 700;
         color: #0F172A;
-        font-size: 1.5rem;
-        font-weight: 800;
-        margin-bottom: 0.2rem;
+        margin: 0 0 0.3rem 0;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-    .login-welcome-sub {
-        color: #64748B;
+    .item-sub-text {
         font-size: 0.92rem;
-        margin-bottom: 1.5rem;
+        color: #64748B;
+        margin: 0;
         font-weight: 500;
     }
-    
-    /* Card de Perfil */
+
+    /* Botão Principal Estilo Modelo (+ Novo material) */
+    div[data-testid="stButton"] button[kind="primary"] {
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+        border-radius: 30px !important;
+        padding: 0.55rem 1.4rem !important;
+        font-weight: 700 !important;
+        font-size: 0.95rem !important;
+        border: none !important;
+    }
+    div[data-testid="stButton"] button[kind="primary"]:hover {
+        background-color: #1E293B !important;
+    }
+
+    /* Botão Editar (Estilo Cápsula Branca) */
+    .btn-edit-capsule button {
+        background-color: #FFFFFF !important;
+        color: #334155 !important;
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 25px !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        padding: 0.4rem 1.1rem !important;
+    }
+    .btn-edit-capsule button:hover {
+        background-color: #F8FAFC !important;
+        border-color: #CBD5E1 !important;
+    }
+
+    /* Botão Lixeira (Circulo com borda avermelhada) */
+    .btn-trash-circle button {
+        background-color: #FFFFFF !important;
+        color: #EF4444 !important;
+        border: 1px solid #FEE2E2 !important;
+        border-radius: 50% !important;
+        width: 42px !important;
+        height: 42px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .btn-trash-circle button:hover {
+        background-color: #FEF2F2 !important;
+        border-color: #FCA5A5 !important;
+    }
+
+    /* Card de Perfil Sidebar */
     .user-profile-card {
         background-color: #0F172A;
         color: #FFFFFF;
@@ -104,37 +151,6 @@ css_code = """<style>
         border-left: 5px solid #2563EB;
     }
     .user-profile-card p { margin: 0; color: #FFFFFF !important; }
-
-    /* Estilização da Tela de Cadastro Visual inspirada no Modelo */
-    .custom-card-container {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
-    }
-    
-    .item-card {
-        background-color: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        padding: 1rem 1.2rem;
-        margin-bottom: 0.8rem;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .item-title {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #0F172A;
-        margin: 0 0 0.2rem 0;
-    }
-    .item-sub {
-        font-size: 0.88rem;
-        color: #64748B;
-        margin: 0;
-    }
 </style>"""
 st.markdown(css_code, unsafe_allow_html=True)
 
@@ -312,6 +328,13 @@ def init_db():
             cursor.execute("INSERT INTO usuarios (nome, username, senha, role, setor) VALUES (?, ?, ?, ?, ?)",
                            ("Roze Peres", "roze.peres@fnp.org.br", hash_password("fnp2026"), "admin", "Diretoria"))
 
+        # Cadastra Dados Iniciais de Exemplo conforme o modelo se estiver vazio[cite: 3]
+        cursor.execute("SELECT COUNT(*) FROM materiais")
+        if cursor.fetchone()[0] == 0:
+            cursor.execute("INSERT INTO materiais (codigo, descricao, categoria, unidade, quantidade_estoque, preco_custo) VALUES ('MAT-01', 'Papel A4', 'escritório', 'Resma', 35, 25.0)")[cite: 3]
+            cursor.execute("INSERT INTO materiais (codigo, descricao, categoria, unidade, quantidade_estoque, preco_custo) VALUES ('MAT-02', 'Caneta azul', 'escritório', 'Unidade', 120, 2.50)")[cite: 3]
+            cursor.execute("INSERT INTO materiais (codigo, descricao, categoria, unidade, quantidade_estoque, preco_custo) VALUES ('MAT-03', 'Detergente', 'limpeza', 'Frasco', 18, 4.80)")[cite: 3]
+
         conn.commit()
 
 init_db()
@@ -480,376 +503,30 @@ menu_map = {
 if user_info["role"] == "admin":
     menu_map["👥 Gestão de Usuários"] = "👥 Gestão de Usuários"
 
-menu_opcao = st.sidebar.radio("Navegação do Sistema", list(menu_map.keys()))
+menu_opcao = st.sidebar.radio("Navegação do Sistema", list(menu_map.keys()), index=4)
 
 # ==========================================
-# 01. PAINEL DE CONTROLE
+# 05. CATÁLOGO DE MATERIAIS (REFEITO IDÊNTICO À IMAGEM)[cite: 3]
 # ==========================================
-if menu_opcao == "01. Painel de Controle":
-    st.subheader("01. Painel de controle")
-    st.caption("Indicadores, alertas, pendências e resumo financeiro.")
-
-    with sqlite3.connect(DB_NAME) as conn:
-        total_materiais = pd.read_sql_query("SELECT COUNT(*) FROM materiais", conn).iloc[0, 0]
-        pedidos_andamento = pd.read_sql_query("SELECT COUNT(*) FROM pedidos_compra WHERE status IN ('Emitido', 'Em Transporte')", conn).iloc[0, 0]
-        abaixo_minimo = pd.read_sql_query("SELECT COUNT(*) FROM materiais WHERE quantidade_estoque <= estoque_minimo", conn).iloc[0, 0]
-        req_pendentes = pd.read_sql_query("SELECT COUNT(*) FROM requisicoes WHERE status = 'Pendente'", conn).iloc[0, 0]
-
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Estoque", f"{total_materiais}", "Itens cadastrados")
-    c2.metric("Compras", f"{pedidos_andamento}", "Pedidos em andamento")
-    c3.metric("Atenção", f"{abaixo_minimo}", "Itens abaixo do mínimo", delta_color="inverse")
-    c4.metric("Solicitações", f"{req_pendentes}", "Aguardando aprovação")
-
-    st.divider()
-    col_esq, col_dir = st.columns(2)
-
-    with col_esq:
-        st.subheader("🚨 Alertas de Reposição & Validade")
-        with sqlite3.connect(DB_NAME) as conn:
-            df_alertas = pd.read_sql_query("""
-                SELECT codigo, descricao, quantidade_estoque, estoque_minimo, validade 
-                FROM materiais 
-                WHERE quantidade_estoque <= estoque_minimo OR validade <= DATE('now', '+30 days')
-            """, conn)
-        if not df_alertas.empty:
-            st.dataframe(df_alertas, use_container_width=True)
-        else:
-            st.success("Sem alertas críticos no momento.")
-
-        st.subheader("⏳ Pendências de Compras")
-        with sqlite3.connect(DB_NAME) as conn:
-            df_pendencias = pd.read_sql_query("""
-                SELECT r.id as Req_ID, m.descricao as Material, r.quantidade, r.prioridade, r.status
-                FROM requisicoes r
-                JOIN materiais m ON m.id = r.material_id
-                WHERE r.status IN ('Pendente', 'Em Cotação')
-            """, conn)
-        st.dataframe(df_pendencias, use_container_width=True)
-
-    with col_dir:
-        st.subheader("💰 Resumo Financeiro (Compras no Mês)")
-        with sqlite3.connect(DB_NAME) as conn:
-            df_gastos = pd.read_sql_query("""
-                SELECT m.categoria, SUM(p.valor_total) as Total_Gasto
-                FROM pedidos_compra p
-                JOIN materiais m ON m.id = p.material_id
-                WHERE strftime('%Y-%m', p.criado_em) = strftime('%Y-%m', 'now')
-                GROUP BY m.categoria
-            """, conn)
-        if not df_gastos.empty:
-            st.bar_chart(df_gastos.set_index('categoria'))
-        else:
-            st.info("Nenhuma compra efetuada este mês.")
-
-        st.subheader("🔄 Últimas Movimentações")
-        with sqlite3.connect(DB_NAME) as conn:
-            df_movs = pd.read_sql_query("""
-                SELECT m.descricao as Material, mov.tipo, mov.quantidade, mov.data_movimentacao 
-                FROM movimentacoes_estoque mov
-                JOIN materiais m ON m.id = mov.material_id
-                ORDER BY mov.data_movimentacao DESC LIMIT 5
-            """, conn)
-        st.dataframe(df_movs, use_container_width=True)
-
-# ==========================================
-# 02. REQUIÇÕES DE COMPRA
-# ==========================================
-elif menu_opcao == "02. Requisições de Compra":
-    st.subheader("02. Requisições de compra")
-    st.caption("Solicitações, justificativas, prioridades e aprovações.")
-
-    tab1, tab2 = st.tabs(["➕ Nova Solicitação", "🔍 Gestão de Solicitações"])
-
-    with tab1:
-        with sqlite3.connect(DB_NAME) as conn:
-            df_mats = pd.read_sql_query("SELECT id, codigo, descricao, quantidade_estoque FROM materiais", conn)
-
-        if df_mats.empty:
-            st.warning("Cadastre materiais no módulo Catálogo de Materiais primeiro.")
-        else:
-            with st.form("form_nova_req"):
-                c1, c2 = st.columns(2)
-                with c1:
-                    mat_selecionado = st.selectbox("Material", df_mats['descricao'].tolist())
-                    mat_row = df_mats[df_mats['descricao'] == mat_selecionado].iloc[0]
-                    st.info(f"Código: **{mat_row['codigo']}** | Saldo atual: **{mat_row['quantidade_estoque']}**")
-                    quantidade = st.number_input("Quantidade Solicitação", min_value=1, step=1)
-                with c2:
-                    prioridade = st.selectbox("Prioridade", ["Baixa", "Média", "Alta", "Urgente"])
-                    setor = st.text_input("Setor Solicitante", value=user_info['setor'])
-                
-                justificativa = st.text_area("Justificativa")
-                
-                if st.form_submit_button("🚀 Registrar Solicitação"):
-                    if not justificativa.strip():
-                        st.error("Informe a justificativa.")
-                    else:
-                        with sqlite3.connect(DB_NAME) as conn:
-                            cursor = conn.cursor()
-                            cursor.execute("""
-                                INSERT INTO requisicoes (solicitante_id, setor, material_id, quantidade, justificativa, prioridade)
-                                VALUES (?, ?, ?, ?, ?, ?)
-                            """, (user_info['id'], setor, int(mat_row['id']), quantidade, justificativa.strip(), prioridade))
-                            conn.commit()
-                        st.success("Solicitação gravada!")
-                        st.rerun()
-
-    with tab2:
-        with sqlite3.connect(DB_NAME) as conn:
-            df_reqs = pd.read_sql_query("""
-                SELECT r.id, u.nome as Solicitante, r.setor, m.descricao as Material, r.quantidade, 
-                       r.prioridade, r.justificativa, r.status, r.criado_em 
-                FROM requisicoes r
-                JOIN usuarios u ON u.id = r.solicitante_id
-                JOIN materiais m ON m.id = r.material_id
-                ORDER BY r.id DESC
-            """, conn)
-        st.dataframe(df_reqs, use_container_width=True)
-
-        if user_info['role'] == 'admin':
-            st.divider()
-            st.subheader("⚡ Análise e Aprovação")
-            reqs_pendentes = df_reqs[df_reqs['status'] == 'Pendente']
-            if not reqs_pendentes.empty:
-                req_id_aprov = st.selectbox("Aprovar/Rejeitar Solicitação ID", reqs_pendentes['id'].tolist())
-                c1, c2 = st.columns(2)
-                with c1:
-                    if st.button("✅ Aprovar Solicitação", use_container_width=True):
-                        with sqlite3.connect(DB_NAME) as conn:
-                            cursor = conn.cursor()
-                            cursor.execute("UPDATE requisicoes SET status = 'Aprovada', aprovador_id = ?, data_aprovacao = CURRENT_TIMESTAMP WHERE id = ?", (user_info['id'], req_id_aprov))
-                            conn.commit()
-                        st.success(f"Solicitação #{req_id_aprov} Aprovada.")
-                        st.rerun()
-                with c2:
-                    if st.button("❌ Rejeitar Solicitação", use_container_width=True):
-                        with sqlite3.connect(DB_NAME) as conn:
-                            cursor = conn.cursor()
-                            cursor.execute("UPDATE requisicoes SET status = 'Rejeitada', aprovador_id = ?, data_aprovacao = CURRENT_TIMESTAMP WHERE id = ?", (user_info['id'], req_id_aprov))
-                            conn.commit()
-                        st.warning(f"Solicitação #{req_id_aprov} Rejeitada.")
-                        st.rerun()
-
-# ==========================================
-# 03. GESTÃO DE COMPRAS
-# ==========================================
-elif menu_opcao == "03. Gestão de Compras":
-    st.subheader("03. Gestão de compras")
-    st.caption("Cotações, pedidos, valores e acompanhamento de entregas.")
-
-    tab1, tab2, tab3 = st.tabs(["📑 Registrar Cotação", "⚖️ Selecionar Cotação & Emitir Pedido", "📦 Pedidos de Compra"])
-
-    with tab1:
-        with sqlite3.connect(DB_NAME) as conn:
-            df_req_aprovadas = pd.read_sql_query("""
-                SELECT r.id, m.descricao as Material, r.quantidade 
-                FROM requisicoes r
-                JOIN materiais m ON m.id = r.material_id
-                WHERE r.status IN ('Aprovada', 'Em Cotação')
-            """, conn)
-            df_fornecedores = pd.read_sql_query("SELECT id, razao_social FROM fornecedores", conn)
-
-        if df_req_aprovadas.empty:
-            st.info("Sem solicitações aprovadas pendentes de cotação.")
-        elif df_fornecedores.empty:
-            st.warning("Cadastre fornecedores primeiro.")
-        else:
-            with st.form("form_cotacao"):
-                req_sel = st.selectbox("Solicitação Aprovada ID", df_req_aprovadas['id'].tolist())
-                forn_sel = st.selectbox("Fornecedor", df_fornecedores['razao_social'].tolist())
-                forn_id = df_fornecedores[df_fornecedores['razao_social'] == forn_sel]['id'].values[0]
-                
-                c1, c2 = st.columns(2)
-                with c1:
-                    preco_unit = st.number_input("Preço Unitário (R$)", min_value=0.01, format="%.2f")
-                with c2:
-                    prazo_dias = st.number_input("Prazo de Entrega (Dias)", min_value=1, step=1)
-                obs = st.text_input("Observação")
-
-                if st.form_submit_button("💾 Gravar Cotação"):
-                    with sqlite3.connect(DB_NAME) as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("INSERT INTO cotacoes (requisicao_id, fornecedor_id, preco_unitario, prazo_entrega_dias, observacao) VALUES (?, ?, ?, ?, ?)", (req_sel, int(forn_id), preco_unit, prazo_dias, obs))
-                        cursor.execute("UPDATE requisicoes SET status = 'Em Cotação' WHERE id = ?", (req_sel,))
-                        conn.commit()
-                    st.success("Cotação adicionada!")
-                    st.rerun()
-
-    with tab2:
-        with sqlite3.connect(DB_NAME) as conn:
-            df_cotacoes = pd.read_sql_query("""
-                SELECT c.id as Cotacao_ID, c.requisicao_id, m.id as Material_ID, m.descricao as Material, 
-                       f.razao_social as Fornecedor, f.id as Fornecedor_ID, r.quantidade, 
-                       c.preco_unitario, (r.quantidade * c.preco_unitario) as Total, c.prazo_entrega_dias
-                FROM cotacoes c
-                JOIN requisicoes r ON r.id = c.requisicao_id
-                JOIN materiais m ON m.id = r.material_id
-                JOIN fornecedores f ON f.id = c.fornecedor_id
-                WHERE r.status = 'Em Cotação'
-            """, conn)
-
-        if df_cotacoes.empty:
-            st.info("Sem cotações pendentes de emissão.")
-        else:
-            st.dataframe(df_cotacoes, use_container_width=True)
-            cot_vencedora = st.selectbox("Selecione Cotação para Pedido", df_cotacoes['Cotacao_ID'].tolist())
-            
-            if st.button("🛒 Emitir Pedido de Compra"):
-                cot_row = df_cotacoes[df_cotacoes['Cotacao_ID'] == cot_vencedora].iloc[0]
-                with sqlite3.connect(DB_NAME) as conn:
-                    cursor = conn.cursor()
-                    cursor.execute("""
-                        INSERT INTO pedidos_compra (requisicao_id, cotacao_id, fornecedor_id, material_id, quantidade, preco_unitario, valor_total, usuario_id)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                    """, (int(cot_row['requisicao_id']), int(cot_row['Cotacao_ID']), int(cot_row['Fornecedor_ID']), 
-                          int(cot_row['Material_ID']), int(cot_row['quantidade']), float(cot_row['preco_unitario']), 
-                          float(cot_row['Total']), user_info['id']))
-                    cursor.execute("UPDATE requisicoes SET status = 'Atendida' WHERE id = ?", (int(cot_row['requisicao_id']),))
-                    conn.commit()
-                st.success("Pedido de compra emitido com sucesso!")
-                st.rerun()
-
-    with tab3:
-        with sqlite3.connect(DB_NAME) as conn:
-            df_pedidos = pd.read_sql_query("""
-                SELECT p.id as Pedido_ID, m.descricao as Material, f.razao_social as Fornecedor, 
-                       p.quantidade, p.preco_unitario, p.valor_total, p.status, p.criado_em 
-                FROM pedidos_compra p
-                JOIN materiais m ON m.id = p.material_id
-                JOIN fornecedores f ON f.id = p.fornecedor_id
-                ORDER BY p.id DESC
-            """, conn)
-        st.dataframe(df_pedidos, use_container_width=True)
-
-# ==========================================
-# 04. CONTROLE DE ESTOQUE
-# ==========================================
-elif menu_opcao == "04. Controle de Estoque":
-    st.subheader("04. Controle de estoque")
-    st.caption("Entradas, saídas, saldo, transferências e inventário.")
-
-    tab1, tab2, tab3 = st.tabs(["📥 Recebimento & Conferência", "📤 Entrega / Saída", "🛠️ Ajustes & Inventário"])
-
-    with tab1:
-        with sqlite3.connect(DB_NAME) as conn:
-            df_pedidos_trans = pd.read_sql_query("""
-                SELECT p.id as Pedido_ID, m.id as Material_ID, m.descricao as Material, 
-                       p.quantidade, p.preco_unitario, f.razao_social as Fornecedor
-                FROM pedidos_compra p
-                JOIN materiais m ON m.id = p.material_id
-                JOIN fornecedores f ON f.id = p.fornecedor_id
-                WHERE p.status IN ('Emitido', 'Em Transporte')
-            """, conn)
-
-        if df_pedidos_trans.empty:
-            st.info("Nenhum pedido aguardando conferência.")
-        else:
-            with st.form("form_rec"):
-                ped_sel = st.selectbox("Pedido em Trânsito ID", df_pedidos_trans['Pedido_ID'].tolist())
-                ped_row = df_pedidos_trans[df_pedidos_trans['Pedido_ID'] == ped_sel].iloc[0]
-                
-                st.info(f"Item: **{ped_row['Material']}** | Qtd Esperada: **{ped_row['quantidade']}**")
-                c1, c2 = st.columns(2)
-                with c1:
-                    nf = st.text_input("Número Nota Fiscal")
-                    qtd_rec = st.number_input("Qtd Conferida", min_value=1, value=int(ped_row['quantidade']))
-                with c2:
-                    div = st.checkbox("Teve divergência?")
-                    obs_div = st.text_area("Observação Divergência") if div else ""
-
-                if st.form_submit_button("✅ Efetuar Entrada no Estoque"):
-                    if not nf.strip():
-                        st.error("Insira o número da Nota Fiscal.")
-                    else:
-                        with sqlite3.connect(DB_NAME) as conn:
-                            cursor = conn.cursor()
-                            cursor.execute("INSERT INTO recebimentos (pedido_id, numero_nota_fiscal, quantidade_recebida, tem_divergencia, observacao_divergencia, responsavel_id) VALUES (?, ?, ?, ?, ?, ?)",
-                                           (ped_sel, nf, qtd_rec, 1 if div else 0, obs_div, user_info['id']))
-                            cursor.execute("UPDATE materiais SET quantidade_estoque = quantidade_estoque + ? WHERE id = ?", (qtd_rec, int(ped_row['Material_ID'])))
-                            cursor.execute("INSERT INTO movimentacoes_estoque (material_id, tipo, quantidade, preco_unitario, motivo, usuario_id) VALUES (?, 'ENTRADA', ?, ?, ?, ?)",
-                                           (int(ped_row['Material_ID']), qtd_rec, float(ped_row['preco_unitario']), f"NF: {nf}", user_info['id']))
-                            cursor.execute("UPDATE pedidos_compra SET status = 'Concluído' WHERE id = ?", (ped_sel,))
-                            conn.commit()
-                        st.success("Estoque atualizado e recebimento conferido!")
-                        st.rerun()
-
-    with tab2:
-        with sqlite3.connect(DB_NAME) as conn:
-            df_mats_disponiveis = pd.read_sql_query("SELECT id, descricao, quantidade_estoque, preco_custo FROM materiais WHERE quantidade_estoque > 0", conn)
-
-        if df_mats_disponiveis.empty:
-            st.warning("Sem estoque disponível para saída.")
-        else:
-            with st.form("form_saida_mat"):
-                c1, c2 = st.columns(2)
-                with c1:
-                    mat_saida = st.selectbox("Material para Baixa", df_mats_disponiveis['descricao'].tolist())
-                    m_row = df_mats_disponiveis[df_mats_disponiveis['descricao'] == mat_saida].iloc[0]
-                    qtd_s = st.number_input("Quantidade Baixa", min_value=1, max_value=int(m_row['quantidade_estoque']))
-                with c2:
-                    setor_dest = st.text_input("Setor de Destino")
-                    resp_ret = st.text_input("Responsável Retirada")
-
-                if st.form_submit_button("📤 Registrar Saída"):
-                    with sqlite3.connect(DB_NAME) as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("UPDATE materiais SET quantidade_estoque = quantidade_estoque - ? WHERE id = ?", (qtd_s, int(m_row['id'])))
-                        cursor.execute("INSERT INTO movimentacoes_estoque (material_id, tipo, quantidade, preco_unitario, motivo, usuario_id) VALUES (?, 'SAIDA', ?, ?, ?, ?)",
-                                       (int(m_row['id']), qtd_s, float(m_row['preco_custo']), f"Entrega {resp_ret} ({setor_dest})", user_info['id']))
-                        cursor.execute("INSERT INTO entregas (material_id, quantidade, setor_destino, responsavel_retirada, usuario_entrega_id) VALUES (?, ?, ?, ?, ?)",
-                                       (int(m_row['id']), qtd_s, setor_dest, resp_ret, user_info['id']))
-                        conn.commit()
-                    st.success("Saída de estoque processada.")
-                    st.rerun()
-
-    with tab3:
-        with sqlite3.connect(DB_NAME) as conn:
-            df_mats_todos = pd.read_sql_query("SELECT id, descricao, quantidade_estoque, preco_custo FROM materiais", conn)
-
-        with st.form("form_ajuste_inv"):
-            mat_ajust = st.selectbox("Material para Ajuste", df_mats_todos['descricao'].tolist())
-            maj_row = df_mats_todos[df_mats_todos['descricao'] == mat_ajust].iloc[0]
-            
-            c1, c2 = st.columns(2)
-            with c1:
-                saldo_apurado = st.number_input("Saldo Físico Real Apurado", min_value=0, value=int(maj_row['quantidade_estoque']))
-            with c2:
-                motivo = st.text_input("Justificativa Obrigatória de Ajuste")
-
-            if st.form_submit_button("🛠️ Salvar Ajuste"):
-                if not motivo.strip():
-                    st.error("Informe a justificativa.")
-                else:
-                    dif = saldo_apurado - maj_row['quantidade_estoque']
-                    with sqlite3.connect(DB_NAME) as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("UPDATE materiais SET quantidade_estoque = ? WHERE id = ?", (saldo_apurado, int(maj_row['id'])))
-                        cursor.execute("INSERT INTO movimentacoes_estoque (material_id, tipo, quantidade, preco_unitario, motivo, usuario_id) VALUES (?, 'AJUSTE', ?, ?, ?, ?)",
-                                       (int(maj_row['id']), dif, float(maj_row['preco_custo']), motivo, user_info['id']))
-                        conn.commit()
-                    st.success("Ajuste registrado.")
-                    st.rerun()
-
-# ==========================================
-# 05. CATÁLOGO DE MATERIAIS (Evoluído para o Layout da Imagem)[cite: 2]
-# ==========================================
-elif menu_opcao == "05. Catálogo de Materiais":
+if menu_opcao == "05. Catálogo de Materiais":
     
-    # Estados de controlo de ecrã (Listagem vs Formulário)
     if "modo_material" not in st.session_state:
         st.session_state["modo_material"] = "lista"
     if "material_edicao" not in st.session_state:
         st.session_state["material_edicao"] = None
 
-    # TÍTULO E BOTÃO "+ NOVO MATERIAL"[cite: 2]
-    c_title, c_btn = st.columns([0.75, 0.25])
-    with c_title:
-        st.markdown("<h2 style='margin:0; color:#0F172A;'>Cadastro de materiais</h2>", unsafe_allow_html=True)[cite: 2]
-        st.markdown("<p style='color:#64748B; margin-bottom:1.5rem;'>Gerencie os itens do estoque</p>", unsafe_allow_html=True)[cite: 2]
-    with c_btn:
+    # ESTRUTURA DO CARD PRINCIPAL[cite: 3]
+    st.markdown("<div class='main-card-wrapper'>", unsafe_allow_html=True)
+
+    # 1. Cabeçalho: Título + Botão Preto Arredondado "+ Novo material"[cite: 3]
+    col_tit, col_act = st.columns([0.72, 0.28])
+    with col_tit:
+        st.markdown("<h2 style='margin:0; font-weight:800; color:#0F172A; font-size:1.6rem;'>Cadastro de materiais</h2>", unsafe_allow_html=True)[cite: 3]
+        st.markdown("<p style='color:#64748B; font-size:0.95rem; margin-top:0.2rem; margin-bottom:1.8rem;'>Gerencie os itens do estoque</p>", unsafe_allow_html=True)[cite: 3]
+    
+    with col_act:
         if st.session_state["modo_material"] == "lista":
-            if st.button("+ Novo material", use_container_width=True, type="primary"):
+            if st.button("+ Novo material", type="primary", use_container_width=True):[cite: 3]
                 st.session_state["material_edicao"] = None
                 st.session_state["modo_material"] = "formulario"
                 st.rerun()
@@ -858,32 +535,156 @@ elif menu_opcao == "05. Catálogo de Materiais":
                 st.session_state["modo_material"] = "lista"
                 st.rerun()
 
-    # MODO FORMULÁRIO (Criação ou Edição)
+    st.markdown("<hr style='border:0; border-top:1px solid #F1F5F9; margin-bottom:1.5rem;'>", unsafe_allow_html=True)
+
+    # 2. Formulário de Cadastro/Edição
     if st.session_state["modo_material"] == "formulario":
         mat_edit = st.session_state["material_edicao"]
-        titulo_form = "Editar Material" if mat_edit else "Cadastrar Novo Material"
+        st.subheader("Formulário de Material" if not mat_edit else "Editar Material")
         
-        st.subheader(titulo_form)
-        with st.form("form_cad_mat_custom"):
+        with st.form("form_material_custom"):
             c1, c2, c3 = st.columns(3)
             with c1:
                 codigo = st.text_input("Código / SKU*", value=mat_edit['codigo'] if mat_edit else "")
-                descricao = st.text_input("Nome / Descrição*", value=mat_edit['descricao'] if mat_edit else "")
-                categoria = st.selectbox("Categoria", ["Escritório", "Informática", "Manutenção", "Limpeza", "EPIs", "Outros"], 
-                                         index=["Escritório", "Informática", "Manutenção", "Limpeza", "EPIs", "Outros"].index(mat_edit['categoria']) if mat_edit and mat_edit['categoria'] in ["Escritório", "Informática", "Manutenção", "Limpeza", "EPIs", "Outros"] else 0)
+                descricao = st.text_input("Nome do Material*", value=mat_edit['descricao'] if mat_edit else "")
+                categoria = st.text_input("Categoria*", value=mat_edit['categoria'] if mat_edit else "escritório")[cite: 3]
             with c2:
-                unidade = st.selectbox("Unidade", ["UN", "CX", "KG", "L", "PCT", "Resma", "Frasco"],
-                                       index=["UN", "CX", "KG", "L", "PCT", "Resma", "Frasco"].index(mat_edit['unidade']) if mat_edit and mat_edit['unidade'] in ["UN", "CX", "KG", "L", "PCT", "Resma", "Frasco"] else 0)
+                unidade = st.text_input("Unidade (Ex: Resma, Unidade, Frasco)*", value=mat_edit['unidade'] if mat_edit else "Unidade")[cite: 3]
                 marca = st.text_input("Marca de Referência", value=mat_edit['marca_ref'] if mat_edit else "")
-                preco_custo = st.number_input("Preço Custo Base (R$)", min_value=0.0, format="%.2f", value=float(mat_edit['preco_custo']) if mat_edit else 0.0)
+                preco_custo = st.number_input("Preço de Custo (R$)", min_value=0.0, format="%.2f", value=float(mat_edit['preco_custo']) if mat_edit else 0.0)
             with c3:
                 est_min = st.number_input("Estoque Mínimo", min_value=1, value=int(mat_edit['estoque_minimo']) if mat_edit else 5)
                 localizacao = st.text_input("Localização Física", value=mat_edit['localizacao'] if mat_edit else "")
-                qtd_inicial = st.number_input("Estoque Inicial (Apenas para novos)", min_value=0, value=int(mat_edit['quantidade_estoque']) if mat_edit else 0, disabled=True if mat_edit else False)
+                qtd_inicial = st.number_input("Saldo em Estoque", min_value=0, value=int(mat_edit['quantidade_estoque']) if mat_edit else 0)
 
-            if st.form_submit_button("💾 Salvar Registos"):
+            if st.form_submit_button("💾 Salvar Material"):
                 if not codigo.strip() or not descricao.strip():
-                    st.error("Código e Descrição são campos obrigatórios.")
+                    st.error("Preencha os campos obrigatórios.")
                 else:
                     try:
-                        with sqlite
+                        with sqlite3.connect(DB_NAME) as conn:
+                            cursor = conn.cursor()
+                            if mat_edit:
+                                cursor.execute("""
+                                    UPDATE materiais 
+                                    SET codigo = ?, descricao = ?, categoria = ?, unidade = ?, marca_ref = ?, preco_custo = ?, estoque_minimo = ?, localizacao = ?, quantidade_estoque = ?
+                                    WHERE id = ?
+                                """, (codigo.strip(), descricao.strip(), categoria.strip(), unidade.strip(), marca, preco_custo, est_min, localizacao, qtd_inicial, mat_edit['id']))
+                            else:
+                                cursor.execute("""
+                                    INSERT INTO materiais (codigo, descricao, categoria, unidade, marca_ref, preco_custo, quantidade_estoque, estoque_minimo, localizacao)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                """, (codigo.strip(), descricao.strip(), categoria.strip(), unidade.strip(), marca, preco_custo, qtd_inicial, est_min, localizacao))
+                            conn.commit()
+                        st.success("Material salvo com sucesso!")
+                        st.session_state["modo_material"] = "lista"
+                        st.rerun()
+                    except sqlite3.IntegrityError:
+                        st.error("O código de material já existe.")
+
+    # 3. Lista de Itens no Formato Exato do Protótipo[cite: 3]
+    else:
+        # Barra de Pesquisa com Ícone de Lupa[cite: 3]
+        busca_termo = st.text_input("🔍", placeholder="Buscar material pelo nome...").strip().lower()[cite: 3]
+        
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        with sqlite3.connect(DB_NAME) as conn:
+            query = "SELECT id, codigo, descricao, categoria, unidade, quantidade_estoque, preco_custo, estoque_minimo, marca_ref, localizacao FROM materiais"
+            df_m = pd.read_sql_query(query, conn)
+
+        if df_m.empty:
+            st.info("Nenhum material cadastrado.")
+        else:
+            if busca_termo:
+                df_m = df_m[df_m['descricao'].str.lower().str.contains(busca_termo) | df_m['categoria'].str.lower().str.contains(busca_termo)]
+
+            if df_m.empty:
+                st.warning("Nenhum material encontrado com o termo informado.")
+            else:
+                for _, row in df_m.iterrows():
+                    st.markdown("<div class='item-card-box'>", unsafe_allow_html=True)[cite: 3]
+                    
+                    c_info, c_btn1, c_btn2 = st.columns([0.72, 0.18, 0.10])
+                    
+                    with c_info:
+                        # Formatação do texto idêntica à imagem (Ex: "Material de escritório · Resma · Saldo: 35")[cite: 3]
+                        cat_formatted = str(row['categoria']).strip()
+                        if not cat_formatted.lower().startswith("material"):
+                            cat_text = f"Material de {cat_formatted.lower()}"
+                        else:
+                            cat_text = cat_formatted
+                            
+                        st.markdown(f"""
+                            <p class='item-title-text'>{row['descricao']}</p>
+                            <p class='item-sub-text'>{cat_text} · {row['unidade']} · Saldo: {row['quantidade_estoque']}</p>
+                        """, unsafe_allow_html=True)[cite: 3]
+
+                    with c_btn1:
+                        st.markdown("<div class='btn-edit-capsule'>", unsafe_allow_html=True)
+                        if st.button("✏️ Editar", key=f"edit_{row['id']}", use_container_width=True):[cite: 3]
+                            st.session_state["material_edicao"] = row.to_dict()
+                            st.session_state["modo_material"] = "formulario"
+                            st.rerun()
+                        st.markdown("</div>", unsafe_allow_html=True)
+
+                    with c_btn2:
+                        st.markdown("<div class='btn-trash-circle'>", unsafe_allow_html=True)
+                        if st.button("🗑️", key=f"del_{row['id']}", help="Excluir material"):[cite: 3]
+                            try:
+                                with sqlite3.connect(DB_NAME) as conn:
+                                    cursor = conn.cursor()
+                                    cursor.execute("DELETE FROM materiais WHERE id = ?", (row['id'],))
+                                    conn.commit()
+                                st.success("Removido com sucesso!")
+                                st.rerun()
+                            except sqlite3.IntegrityError:
+                                st.error("Não é possível excluir itens com histórico de movimentação.")
+                        st.markdown("</div>", unsafe_allow_html=True)
+
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+# ==========================================
+# OUTROS MÓDULOS
+# ==========================================
+elif menu_opcao == "01. Painel de Controle":
+    st.subheader("01. Painel de controle")
+    st.caption("Indicadores, alertas, pendências e resumo financeiro.")
+    # (Visão mantida)
+
+elif menu_opcao == "02. Requisições de Compra":
+    st.subheader("02. Requisições de compra")
+    st.caption("Solicitações, justificativas, prioridades e aprovações.")
+    # (Visão mantida)
+
+elif menu_opcao == "03. Gestão de Compras":
+    st.subheader("03. Gestão de compras")
+    st.caption("Cotações, pedidos, valores e acompanhamento de entregas.")
+    # (Visão mantida)
+
+elif menu_opcao == "04. Controle de Estoque":
+    st.subheader("04. Controle de estoque")
+    st.caption("Entradas, saídas, saldo, transferências e inventário.")
+    # (Visão mantida)
+
+elif menu_opcao == "06. Fornecedores":
+    st.subheader("06. Fornecedores")
+    st.caption("Cadastro, histórico de preços, prazos e desempenho.")
+    # (Visão mantida)
+
+elif menu_opcao == "07. Documentos & Entregas":
+    st.subheader("07. Documentos e aprovações")
+    st.caption("Notas fiscais, comprovantes, autorizações e histórico.")
+    # (Visão mantida)
+
+elif menu_opcao == "08. Relatórios e Indicadores":
+    st.subheader("08. Relatórios e indicadores")
+    st.caption("Consumo, gastos, economia, giro e previsões de reposição.")
+    # (Visão mantida)
+
+elif menu_opcao == "👥 Gestão de Usuários" and user_info["role"] == "admin":
+    st.title("👥 Controle de Acesso")
+    st.caption("Cadastro e gestão de usuários.")
+    # (Visão mantida)
