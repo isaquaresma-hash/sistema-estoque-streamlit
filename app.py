@@ -32,8 +32,8 @@ def get_base64_of_bin_file(bin_file):
 img_name = "Sistema de Compras e Estoque.png"
 img_base64 = get_base64_of_bin_file(img_name)
 
-# Injeção de estilo em linha para evitar erros de sintaxe
-css_code = "<style>.stApp { background: url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed; background-size: cover; } [data-testid='stSidebar'] { background-color: rgba(245, 248, 252, 0.96) !important; border-right: 1px solid #D7E3F1; } [data-testid='stSidebar'] * { color: #103965 !important; } div[data-testid='stForm'] { background-color: #FFFFFF !important; padding: 2rem !important; border-radius: 20px !important; border: 1px solid #E2E8F0 !important; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2) !important; } .login-logo-img { max-width: 260px; width: 100%; height: auto; display: block; margin: 0 auto 1rem auto; } .login-welcome-title { color: #0D1B2A; font-size: 1.4rem; font-weight: 800; margin: 0 0 0.2rem 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; } .login-welcome-sub { color: #64748B; font-size: 0.88rem; margin-bottom: 1.2rem; font-weight: 500; } div[data-testid='stForm'] label { color: #1E293B !important; font-weight: 700 !important; font-size: 0.88rem !important; } .stTextInput input { background-color: #F8FAFC !important; border: 1px solid #CBD5E1 !important; border-radius: 8px !important; color: #1E293B !important; padding: 0.6rem 0.9rem !important; } .stButton>button { background-color: #0D47A1 !important; color: #FFFFFF !important; border-radius: 8px !important; font-weight: 700 !important; padding: 0.65rem 1.2rem !important; border: none !important; } .secure-footer { text-align: center; color: #94A3B8; font-size: 0.8rem; margin-top: 1rem; } .user-profile-card { background-color: #0D47A1; color: #FFFFFF; padding: 1rem; border-radius: 10px; margin-bottom: 1.2rem; border-left: 5px solid #5A9BE5; } .user-profile-card p { margin: 0; color: #FFFFFF !important; }</style>"
+# Estilização CSS com os detalhes de ondas curvas em azul escuro nos cantos
+css_code = "<style>.stApp { background: url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed; background-size: cover; } [data-testid='stSidebar'] { background-color: rgba(245, 248, 252, 0.96) !important; border-right: 1px solid #D7E3F1; } [data-testid='stSidebar'] * { color: #103965 !important; } div[data-testid='stForm'] { background-color: #FFFFFF !important; padding: 2.2rem 2rem 1.8rem 2rem !important; border-radius: 28px !important; border: 1px solid #E2E8F0 !important; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important; position: relative !important; overflow: hidden !important; } div[data-testid='stForm']::before { content: ''; position: absolute; top: 0; left: 0; width: 140px; height: 140px; background: radial-gradient(circle at top left, #0D47A1 65%, #002171 85%, transparent 86%); pointer-events: none; } div[data-testid='stForm']::after { content: ''; position: absolute; bottom: 0; right: 0; width: 150px; height: 150px; background: radial-gradient(circle at bottom right, #0D47A1 65%, #002171 85%, transparent 86%); pointer-events: none; } .login-logo-img { max-width: 260px; width: 100%; height: auto; display: block; margin: 0 auto 1rem auto; position: relative; z-index: 2; } .login-welcome-title { color: #0D1B2A; font-size: 1.4rem; font-weight: 800; margin: 0 0 0.2rem 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; position: relative; z-index: 2; } .login-welcome-sub { color: #64748B; font-size: 0.88rem; margin-bottom: 1.2rem; font-weight: 500; position: relative; z-index: 2; } div[data-testid='stForm'] label { color: #1E293B !important; font-weight: 700 !important; font-size: 0.88rem !important; position: relative; z-index: 2; } .stTextInput input { background-color: #F8FAFC !important; border: 1px solid #CBD5E1 !important; border-radius: 10px !important; color: #1E293B !important; padding: 0.65rem 0.9rem !important; position: relative; z-index: 2; } .stButton>button { background-color: #0D47A1 !important; color: #FFFFFF !important; border-radius: 10px !important; font-weight: 700 !important; padding: 0.7rem 1.2rem !important; border: none !important; position: relative; z-index: 2; } .secure-footer { text-align: center; color: #94A3B8; font-size: 0.8rem; margin-top: 1rem; position: relative; z-index: 2; } .user-profile-card { background-color: #0D47A1; color: #FFFFFF; padding: 1rem; border-radius: 10px; margin-bottom: 1.2rem; border-left: 5px solid #5A9BE5; } .user-profile-card p { margin: 0; color: #FFFFFF !important; }</style>"
 st.markdown(css_code, unsafe_allow_html=True)
 
 DB_NAME = "estoque_compras.db"
@@ -367,32 +367,3 @@ elif menu == "📊 Dashboard & Relatórios":
 elif menu == "👥 Gestão de Usuários":
     st.subheader("👥 Controle de Acesso e Usuários")
     st.caption("Gerenciamento de contas e atribuição de permissões no sistema.")
-    
-    with st.form("form_novo_usuario"):
-        st.subheader("Cadastrar Novo Usuário")
-        novo_nome = st.text_input("Nome Completo")
-        novo_username = st.text_input("E-mail / Usuário de Acesso")
-        nova_senha = st.text_input("Senha", type="password")
-        novo_role = st.selectbox("Nível de Permissão", ["operador", "admin"])
-        
-        submit_user = st.form_submit_button("Cadastrar Usuário")
-        if submit_user:
-            if not novo_nome or not novo_username or not nova_senha:
-                st.error("Todos os campos do formulário devem ser preenchidos.")
-            else:
-                try:
-                    conn = sqlite3.connect(DB_NAME)
-                    cursor = conn.cursor()
-                    cursor.execute("INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)", (novo_nome.strip(), novo_username.strip().lower(), hash_password(nova_senha), novo_role))
-                    conn.commit()
-                    conn.close()
-                    st.success(f"Acesso para '{novo_username}' configurado com sucesso!")
-                except sqlite3.IntegrityError:
-                    st.error("O e-mail/usuário informado já está cadastrado no sistema.")
-
-    st.divider()
-    st.subheader("Usuários Ativos")
-    conn = sqlite3.connect(DB_NAME)
-    users_df = pd.read_sql_query("SELECT id, nome, username, role FROM usuarios", conn)
-    conn.close()
-    st.dataframe(users_df, use_container_width=True)
