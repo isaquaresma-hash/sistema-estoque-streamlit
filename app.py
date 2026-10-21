@@ -134,7 +134,6 @@ def init_db():
         cursor.execute("CREATE TABLE IF NOT EXISTS produtos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT UNIQUE NOT NULL, codigo_barras TEXT, preco_custo REAL NOT NULL, quantidade_estoque INTEGER NOT NULL DEFAULT 0, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
         cursor.execute("CREATE TABLE IF NOT EXISTS movimentacoes_estoque (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_id INTEGER, tipo TEXT CHECK(tipo IN ('ENTRADA', 'SAIDA')), quantidade INTEGER NOT NULL, preco_unitario REAL NOT NULL, data_compra DATE, data_movimentacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(produto_id) REFERENCES produtos(id))")
         
-        # Migração automática de coluna se a tabela já existia sem a data de compra
         cursor.execute("PRAGMA table_info(movimentacoes_estoque)")
         columns = [col[1] for col in cursor.fetchall()]
         if 'data_compra' not in columns:
@@ -306,49 +305,4 @@ def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
     
     table_data = [headers]
 
-    for _, row in df_comparativo.iterrows():
-        dif_qtd = row['Diferença Qtd']
-        dif_qtd_str = f"+{dif_qtd}" if dif_qtd > 0 else str(dif_qtd)
-        
-        dif_preco = row['Diferença Preço']
-        dif_preco_str = f"+R$ {dif_preco:.2f}" if dif_preco > 0 else f"R$ {dif_preco:.2f}"
-
-        table_data.append([
-            Paragraph(str(row['Produto']), cell_style),
-            Paragraph(str(int(row[f'Qtd ({mes_anterior})'])), cell_style),
-            Paragraph(str(int(row[f'Qtd ({mes_atual})'])), cell_style),
-            Paragraph(dif_qtd_str, cell_style),
-            Paragraph(f"R$ {row[f'Preço ({mes_atual})']:.2f}", cell_style),
-            Paragraph(dif_preco_str, cell_style)
-        ])
-
-    table = Table(table_data, colWidths=[150, 80, 80, 70, 80, 80])
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0D47A1')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D7E3F1')),
-    ]))
-    
-    story.append(table)
-    doc.build(story)
-    buffer.seek(0)
-    return buffer.getvalue()
-
-# ==========================================
-# 1. GESTÃO DE PRODUTOS
-# ==========================================
-if menu == "📦 Gestão de Produtos":
-    st.subheader("📦 Cadastro e Alteração de Produtos")
-    st.caption("Cadastre novos produtos e atualize os preços de custo base.")
-    
-    tab1, tab2 = st.tabs(["➕ Cadastrar Novo Produto", "✏️ Editar Produto / Valor"])
-    
-    with tab1:
-        with st.form("form_cadastro"):
-            c1, c2 = st.columns(2)
-            with c1:
-                nome = st.text_input("Nome do Produto")
-                preco_custo = st.
+    for _, row in df_comparativo
