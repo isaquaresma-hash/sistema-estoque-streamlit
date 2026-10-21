@@ -33,10 +33,7 @@ img_name = "Sistema de Compras e Estoque.png"
 img_base64 = get_base64_of_bin_file(img_name)
 
 if img_base64:
-    bg_style = f"""
-        background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url("data:image/png;base64,{img_base64}") no-repeat center center fixed;
-        background-size: cover;
-    """
+    bg_style = f'background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85)), url("data:image/png;base64,{img_base64}") no-repeat center center fixed; background-size: cover;'
 else:
     bg_style = "background-color: #FFFFFF;"
 
@@ -462,4 +459,93 @@ elif menu == "🔄 Movimentação de Estoque":
     conn.close()
     
     if produtos_df.empty:
-        st.warning("Nenhum produto disponível no
+        st.warning("Nenhum produto disponível no catálogo. Cadastre produtos antes de realizar movimentações.")
+    else:
+        col1, col2 = st.columns(2)
+        with col1:
+            prod_nome = st.selectbox("Selecione o Produto", produtos_df['nome'].tolist())
+            prod_info = produtos_df[produtos_df['nome'] == prod_nome].iloc[0]
+            st.info(f"**Estoque Atual:** {prod_info['quantidade_estoque']} unidades | **Preço Base:** R$ {prod_info['preco_custo']:.2f}")
+
+        with col2:
+            tipo_mov = st.radio("Tipo de Lançamento", ["ENTRADA (Compra/Aporte)", "SAIDA (Baixa/Consumo)"])
+            quantidade = st.number_input("Quantidade", min_value=1, step=1)
+            preco_unitario = st.number_input("Preço Unitário da Operação (R$)", min_value=0.01, value=float(prod_info['preco_custo']), format="%.2f")
+
+        if st.button("Registrar Operação"):
+            tipo = "ENTRADA" if "ENTRADA" in tipo_mov else "SAIDA"
+            
+            if tipo == "SAIDA" and quantidade > prod_info['quantidade_estoque']:
+                st.error("Operação cancelada: a quantidade solicitada excede o saldo em estoque.")
+            else:
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                
+                cursor.execute(
+                    "INSERT INTO movimentacoes_estoque (produto_id, tipo, quantidade, preco_unitario) VALUES (?, ?, ?, ?)",
+                    (int(prod_info['id']), tipo, quantidade, preco_unitario)
+                )
+                
+                nova_qtd = prod_info['quantidade_estoque'] + quantidade if tipo == "ENTRADA" else prod_info['quantidade_estoque'] - quantidade
+                cursor.execute("UPDATE produtos SET quantidade_estoque = ? WHERE id = ?", (nova_qtd, int(prod_info['id'])))
+                
+                conn.commit()
+                conn.close()
+                st.success("Movimentação registrada com sucesso!")
+                st.rerun()
+
+# ==========================================
+# 3. DASHBOARD E RELATÓRIO COMPARATIVO
+# ==========================================
+elif menu == "📊 Dashboard & Relatórios":
+    st.subheader("📊 Painel Comparativo & Exportação PDF")
+    st.caption("Comparação periódica de volume de compras e variações de valor.")
+    
+    conn = sqlite3.connect(DB_NAME)
+    df_mov = pd.read_sql_query("""
+        SELECT 
+            m.id, p.nome as produto, m.tipo, m.quantidade, m.preco_unitario,
+            strftime('%Y-%m', m.data_movimentacao) as mes_ano
+        FROM movimentacoes_estoque m
+        JOIN produtos p ON p.id = m.produto_id
+    """, conn)
+    conn.close()
+
+    if df_mov.empty:
+        st.info("Ainda não há lançamentos registrados para gerar comparativos.")
+    else:
+        meses_disponiveis = sorted(df_mov['mes_ano'].unique(), reverse=True)
+        
+        if len(meses_disponiveis) < 2:
+            st.warning("São necessários lançamentos em pelo menos dois meses diferentes para montar o comparativo de períodos.")
+            st.markdown("### Histórico de Lançamentos:")
+            st.dataframe(df_mov, use_container_width=True)
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                mes_atual = st.selectbox("Selecione o Mês Recente (Atual)", meses_disponiveis, index=0)
+            with col2:
+                mes_anterior = st.selectbox("Selecione o Mês Base (Anterior)", meses_disponiveis, index=1 if len(meses_disponiveis) > 1 else 0)
+
+            # Agregação Mês Atual
+            df_atual = df_mov[df_mov['mes_ano'] == mes_atual].groupby('produto').agg(
+                qtd_atual=('quantidade', 'sum'),
+                preco_atual=('preco_unitario', 'mean')
+            ).reset_index()
+
+            # Agregação Mês Anterior
+            df_ant = df_mov[df_mov['mes_ano'] == mes_anterior].groupby('produto').agg(
+                qtd_ant=('quantidade', 'sum'),
+                preco_ant=('preco_unitario', 'mean')
+            ).reset_index()
+
+            # Merge e Cálculo das Diferenças
+            df_comp = pd.merge(df_atual, df_ant, on='produto', how='outer').fillna(0)
+            df_comp['Diferença Qtd'] = df_comp['qtd_atual'] - df_comp['qtd_ant']
+            df_comp['Diferença Preço'] = df_comp['preco_atual'] - df_comp['preco_ant']
+
+            df_comp.rename(columns={
+                'produto': 'Produto',
+                'qtd_ant': f'Qtd ({mes_anterior})',
+                'qtd_atual': f'Qtd ({mes_atual})',
+                'preco_ant': f'Preço ({mes_anterior})',
