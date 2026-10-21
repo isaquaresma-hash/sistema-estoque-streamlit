@@ -549,3 +549,72 @@ elif menu == "📊 Dashboard & Relatórios":
                 'qtd_ant': f'Qtd ({mes_anterior})',
                 'qtd_atual': f'Qtd ({mes_atual})',
                 'preco_ant': f'Preço ({mes_anterior})',
+                'preco_atual': f'Preço ({mes_atual})'
+            }, inplace=True)
+
+            # Cards de Métricas
+            st.subheader("📌 Indicadores de Variação")
+            m1, m2, m3 = st.columns(3)
+            total_dif_qtd = df_comp['Diferença Qtd'].sum()
+            media_dif_preco = df_comp['Diferença Preço'].mean()
+            
+            m1.metric("Variação de Volume", f"{total_dif_qtd:+} un")
+            m2.metric("Variação Média de Preço", f"R$ {media_dif_preco:+.2f}")
+            m3.metric("Itens Analisados", len(df_comp))
+
+            st.divider()
+            
+            st.subheader("📋 Tabela Analítica")
+            st.dataframe(df_comp, use_container_width=True)
+
+            # Exportação
+            st.divider()
+            st.subheader("📄 Emissão de Documento Oficial")
+            
+            pdf_data = gerar_pdf_bytes(df_comp, mes_atual, mes_anterior)
+            
+            st.download_button(
+                label="📥 Baixar Relatório Comparativo em PDF",
+                data=pdf_data,
+                file_name=f"relatorio_gestao_compras_{mes_anterior}_vs_{mes_atual}.pdf",
+                mime="application/pdf"
+            )
+
+# ==========================================
+# 4. GESTÃO DE USUÁRIOS (EXCLUSIVO ADMIN)
+# ==========================================
+elif menu == "👥 Gestão de Usuários":
+    st.subheader("👥 Controle de Acesso e Usuários")
+    st.caption("Gerenciamento de contas e atribuição de permissões no sistema.")
+    
+    with st.form("form_novo_usuario"):
+        st.subheader("Cadastrar Novo Usuário")
+        novo_nome = st.text_input("Nome Completo")
+        novo_username = st.text_input("E-mail / Usuário de Acesso")
+        nova_senha = st.text_input("Senha", type="password")
+        novo_role = st.selectbox("Nível de Permissão", ["operador", "admin"])
+        
+        submit_user = st.form_submit_button("Cadastrar Usuário")
+        if submit_user:
+            if not novo_nome or not novo_username or not nova_senha:
+                st.error("Todos os campos do formulário devem ser preenchidos.")
+            else:
+                try:
+                    conn = sqlite3.connect(DB_NAME)
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        "INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)",
+                        (novo_nome.strip(), novo_username.strip().lower(), hash_password(nova_senha), novo_role)
+                    )
+                    conn.commit()
+                    conn.close()
+                    st.success(f"Acesso para '{novo_username}' configurado com sucesso!")
+                except sqlite3.IntegrityError:
+                    st.error("O e-mail/usuário informado já está cadastrado no sistema.")
+
+    st.divider()
+    st.subheader("Usuários Ativos")
+    conn = sqlite3.connect(DB_NAME)
+    users_df = pd.read_sql_query("SELECT id, nome, username, role FROM usuarios", conn)
+    conn.close()
+    st.dataframe(users_df, use_container_width=True)
