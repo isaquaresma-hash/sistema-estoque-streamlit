@@ -68,12 +68,20 @@ def init_db():
         )
     """)
     
-    # Criar usuário Administrador Padrão (se não existir nenhum)
-    cursor.execute("SELECT COUNT(*) FROM usuarios")
+    # Usuário Padrão Admin (admin)
+    cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'admin'")
     if cursor.fetchone()[0] == 0:
         cursor.execute(
             "INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)",
             ("Administrador", "admin", hash_password("admin123"), "admin")
+        )
+
+    # Usuário Cadastrado: Roze Peres
+    cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'roze.peres@fnp.org.br'")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute(
+            "INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)",
+            ("Roze Peres", "roze.peres@fnp.org.br", hash_password("fnp2026"), "admin")
         )
         
     conn.commit()
@@ -104,7 +112,7 @@ def login_screen():
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.subheader("Login de Acesso")
-        username = st.text_input("Usuário")
+        username = st.text_input("E-mail / Usuário")
         password = st.text_input("Senha", type="password")
         
         if st.button("Entrar", type="primary", use_container_width=True):
@@ -120,13 +128,13 @@ def login_screen():
             else:
                 st.error("Usuário ou senha incorretos.")
         
-        st.info("💡 **Acesso Inicial Padrão:**\n- **Usuário:** `admin` | **Senha:** `admin123`")
+        st.info("💡 **Acesso Cadastrado:**\n- **E-mail:** `roze.peres@fnp.org.br` | **Senha:** `fnp2026`\n- **Acesso Admin:** `admin` | **Senha:** `admin123`")
 
 def logout():
     st.session_state["usuario_logado"] = None
     st.rerun()
 
-# Bloqueia a execução das telas caso não esteja autenticado
+# Bloqueia a execução caso não esteja autenticado
 if not st.session_state["usuario_logado"]:
     login_screen()
     st.stop()
@@ -136,7 +144,6 @@ if not st.session_state["usuario_logado"]:
 # ==========================================
 user_info = st.session_state["usuario_logado"]
 
-# Sidebar com perfil do usuário e navegação
 st.sidebar.markdown(f"👤 **Usuário:** {user_info['nome']}")
 st.sidebar.markdown(f"🔑 **Permissão:** {user_info['role'].capitalize()}")
 if st.sidebar.button("🔴 Sair / Logout"):
@@ -420,7 +427,7 @@ elif menu == "👥 Gestão de Usuários":
     with st.form("form_novo_usuario"):
         st.subheader("Cadastrar Novo Usuário")
         novo_nome = st.text_input("Nome Completo")
-        novo_username = st.text_input("Nome de Usuário (Login)")
+        novo_username = st.text_input("Nome de Usuário / E-mail")
         nova_senha = st.text_input("Senha", type="password")
         novo_role = st.selectbox("Nível de Permissão", ["operador", "admin"])
         
