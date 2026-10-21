@@ -58,6 +58,7 @@ css_code = """<style>
     [data-testid='stSidebar'] * { color: #1E293B !important; }
     [data-testid="stElementToolbar"] { display: none !important; }
     
+    /* Container Principal estilo Card */
     .main-card-wrapper {
         background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
@@ -66,6 +67,7 @@ css_code = """<style>
         box-shadow: 0 4px 16px rgba(0, 0, 0, 0.02);
     }
 
+    /* Cartão do Item estilo protótipo */
     .item-card-box {
         background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
@@ -92,6 +94,7 @@ css_code = """<style>
         font-weight: 500;
     }
 
+    /* Botão estilo "+ Novo material" */
     div[data-testid="stButton"] button[kind="primary"] {
         background-color: #000000 !important;
         color: #FFFFFF !important;
@@ -105,6 +108,7 @@ css_code = """<style>
         background-color: #1E293B !important;
     }
 
+    /* Botão Editar */
     .btn-edit-capsule button {
         background-color: #FFFFFF !important;
         color: #334155 !important;
@@ -119,6 +123,7 @@ css_code = """<style>
         border-color: #CBD5E1 !important;
     }
 
+    /* Botão Lixeira */
     .btn-trash-circle button {
         background-color: #FFFFFF !important;
         color: #EF4444 !important;
@@ -136,6 +141,7 @@ css_code = """<style>
         border-color: #FCA5A5 !important;
     }
 
+    /* Perfil do Utilizador */
     .user-profile-card {
         background-color: #0F172A;
         color: #FFFFFF;
@@ -230,77 +236,4 @@ def init_db():
                 prazo_entrega_dias INTEGER,
                 observacao TEXT,
                 selecionado INTEGER DEFAULT 0,
-                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(requisicao_id) REFERENCES requisicoes(id),
-                FOREIGN KEY(fornecedor_id) REFERENCES fornecedores(id)
-            )
-        """)
-        
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS pedidos_compra (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                requisicao_id INTEGER,
-                cotacao_id INTEGER,
-                fornecedor_id INTEGER,
-                material_id INTEGER,
-                quantidade INTEGER NOT NULL,
-                preco_unitario REAL NOT NULL,
-                valor_total REAL NOT NULL,
-                status TEXT CHECK(status IN ('Emitido', 'Em Transporte', 'Concluído', 'Cancelado')) DEFAULT 'Emitido',
-                usuario_id INTEGER,
-                criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(requisicao_id) REFERENCES requisicoes(id),
-                FOREIGN KEY(cotacao_id) REFERENCES cotacoes(id),
-                FOREIGN KEY(fornecedor_id) REFERENCES fornecedores(id),
-                FOREIGN KEY(material_id) REFERENCES materiais(id),
-                FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
-            )
-        """)
-        
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS recebimentos (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                pedido_id INTEGER,
-                numero_nota_fiscal TEXT NOT NULL,
-                quantidade_recebida INTEGER NOT NULL,
-                tem_divergencia INTEGER DEFAULT 0,
-                observacao_divergencia TEXT,
-                responsavel_id INTEGER,
-                data_recebimento TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(pedido_id) REFERENCES pedidos_compra(id),
-                FOREIGN KEY(responsavel_id) REFERENCES usuarios(id)
-            )
-        """)
-
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS movimentacoes_estoque (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                material_id INTEGER,
-                tipo TEXT CHECK(tipo IN ('ENTRADA', 'SAIDA', 'AJUSTE', 'TRANSFERENCIA')),
-                quantidade INTEGER NOT NULL,
-                preco_unitario REAL NOT NULL,
-                motivo TEXT,
-                usuario_id INTEGER,
-                data_movimentacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(material_id) REFERENCES materiais(id),
-                FOREIGN KEY(usuario_id) REFERENCES usuarios(id)
-            )
-        """)
-
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS entregas (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                requisicao_id INTEGER,
-                material_id INTEGER,
-                quantidade INTEGER NOT NULL,
-                setor_destino TEXT NOT NULL,
-                responsavel_retirada TEXT NOT NULL,
-                usuario_entrega_id INTEGER,
-                data_entrega TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY(requisicao_id) REFERENCES requisicoes(id),
-                FOREIGN KEY(material_id) REFERENCES materiais(id),
-                FOREIGN KEY(usuario_entrega_id) REFERENCES usuarios(id)
-            )
-        """)
-        
-        cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'admin'")
+                criado_em TIMESTAMP DEFAULT CURRENT
