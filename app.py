@@ -154,17 +154,14 @@ def mesclar_produtos_duplicados_db(cursor):
         
     for nome_lower, lista in agrupados.items():
         if len(lista) > 1:
-            # Mantém o primeiro registro registrado (ID principal) e ajusta o nome para Title Case
             id_principal, _, _ = lista[0]
             nome_formatado = lista[0][1].strip().title()
             
             total_estoque = sum(item[2] for item in lista)
             
-            # Atualiza produto principal com nome formatado e soma do estoque
             cursor.execute("UPDATE produtos SET nome = ?, quantidade_estoque = ? WHERE id = ?", 
                            (nome_formatado, total_estoque, id_principal))
             
-            # Reatribui movimentações dos produtos duplicados para o ID principal
             for pid_duplicado, _, _ in lista[1:]:
                 cursor.execute("UPDATE movimentacoes_estoque SET produto_id = ? WHERE produto_id = ?", 
                                (id_principal, pid_duplicado))
@@ -178,7 +175,6 @@ def init_db():
         cursor.execute("CREATE TABLE IF NOT EXISTS produtos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT UNIQUE NOT NULL COLLATE NOCASE, codigo_barras TEXT, preco_custo REAL NOT NULL, quantidade_estoque INTEGER NOT NULL DEFAULT 0, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
         cursor.execute("CREATE TABLE IF NOT EXISTS movimentacoes_estoque (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_id INTEGER, tipo TEXT CHECK(tipo IN ('ENTRADA', 'SAIDA')), quantidade INTEGER NOT NULL, preco_unitario REAL NOT NULL, data_compra DATE, data_movimentacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(produto_id) REFERENCES produtos(id))")
 
-        # Corrige registros com saldos inválidos e funde duplicados por caixa alta/baixa
         cursor.execute("SELECT id, quantidade_estoque FROM produtos")
         for produto_id, quantidade_db in cursor.fetchall():
             quantidade_corrigida = inteiro_seguro(quantidade_db)
@@ -427,83 +423,3 @@ if menu == "📦 Gestão de Produtos":
                         st.success(f"Produto '{nome_formatado}' cadastrado com sucesso!")
                     except sqlite3.IntegrityError:
                         st.error("Já existe um produto registrado com este nome.")
-
-    with tab2:
-        with sqlite3.connect(DB_NAME) as conn:
-            produtos_df = pd.read_sql_query("SELECT id, nome, preco_custo, quantidade_estoque FROM produtos ORDER BY nome ASC", conn)
-        
-        if not produtos_df.empty:
-            prod_selecionado = st.selectbox("Selecione o Produto para Alteração", produtos_df['nome'].tolist())
-            dados_prod = produtos_df[produtos_df['nome'] == prod_selecionado].iloc[0]
-            
-            with st.form("form_editar"):
-                c1, c2 = st.columns(2)
-                with c1:
-                    novo_nome = st.text_input("Nome", value=dados_prod['nome'])
-                with c2:
-                    novo_preco = st.number_input("Preço de Custo (R$)", min_value=0.01, value=float(dados_prod['preco_custo']), format="%.2f")
-                
-                if st.form_submit_button("🔄 Atualizar Informações"):
-                    nome_edit_formatado = novo_nome.strip().title()
-                    if not nome_edit_formatado:
-                        st.error("O nome do produto é obrigatório.")
-                    else:
-                        try:
-                            with sqlite3.connect(DB_NAME) as conn:
-                                cursor = conn.cursor()
-                                cursor.execute(
-                                    "UPDATE produtos SET nome = ?, preco_custo = ? WHERE id = ?",
-                                    (nome_edit_formatado, novo_preco, int(dados_prod["id"]))
-                                )
-                                conn.commit()
-                            st.success("Dados do produto atualizados com sucesso!")
-                            st.rerun()
-                        except sqlite3.IntegrityError:
-                            st.error("Já existe outro produto cadastrado com esse nome.")
-        else:
-            st.info("Nenhum produto cadastrado no banco de dados.")
-
-    with tab3:
-        st.warning("Por segurança, só é possível excluir produtos que não tenham movimentações registradas.")
-        with sqlite3.connect(DB_NAME) as conn:
-            produtos_excluir = pd.read_sql_query(
-                "SELECT p.id, p.nome, p.quantidade_estoque FROM produtos p "
-                "WHERE NOT EXISTS (SELECT 1 FROM movimentacoes_estoque m WHERE m.produto_id = p.id) "
-                "ORDER BY p.nome",
-                conn
-            )
-        if produtos_excluir.empty:
-            st.info("Não há produtos sem histórico disponíveis para exclusão.")
-        else:
-            nome_excluir = st.selectbox("Selecione o produto que deseja excluir", produtos_excluir["nome"].tolist(), key="produto_para_excluir")
-            dados_excluir = produtos_excluir[produtos_excluir["nome"] == nome_excluir].iloc[0]
-            st.write(f"Estoque atual: **{inteiro_seguro(dados_excluir['quantidade_estoque'])}** unidade(s)")
-            confirmar_exclusao = st.checkbox("Confirmo que desejo excluir este produto permanentemente.", key="confirmar_exclusao_produto")
-            if st.button("🗑️ Excluir produto", disabled=not confirmar_exclusao):
-                with sqlite3.connect(DB_NAME) as conn:
-                    conn.execute("DELETE FROM produtos WHERE id = ?", (int(dados_excluir["id"]),))
-                    conn.commit()
-                st.success("Produto excluído com sucesso.")
-                st.rerun()
-
-# ==========================================
-# 2. MOVIMENTAÇÃO DE ESTOQUE (REORGANIZADO & RE-ESTILIZADO)
-# ==========================================
-elif menu == "🔄 Movimentação de Estoque":
-    st.subheader("🔄 Movimentações de Compras & Estoque")
-    st.caption("Registro de compras (entradas) e saídas operacionais.")
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    with sqlite3.connect(DB_NAME) as conn:
-        produtos_df = pd.read_sql_query("SELECT id, nome, preco_custo, quantidade_estoque FROM produtos ORDER BY nome ASC", conn)
-    
-    if produtos_df.empty:
-        st.warning("Nenhum produto disponível no catálogo. Cadastre produtos antes de realizar movimentações.")
-    else:
-        # Divide a interface em dois painéis organizados visualmente
-        col_esq, col_dir = st.columns([1.1, 0.9], gap="large")
-        
-        with col_esq:
-            st.markdown("##### 1. Seleção e Resumo do Item")
-            prod_nome = st.selectbox("Selecione o Produto", produtos_df['nome'].tolist())
-            prod_info = produtos_df[produtos_df['nome'] == prod
