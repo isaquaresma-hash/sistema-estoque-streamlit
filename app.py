@@ -21,10 +21,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Inicializar Estado de Sessão de Login
-if "usuario_logado" not in st.session_state:
-    st.session_state["usuario_logado"] = None
-
 # Carregar imagem do Logo em Base64
 def get_base64_of_bin_file(bin_file):
     if os.path.exists(bin_file):
@@ -36,27 +32,24 @@ def get_base64_of_bin_file(bin_file):
 img_name = "Sistema de Compras e Estoque.png"
 img_base64 = get_base64_of_bin_file(img_name)
 
-# MARCA D'ÁGUA SUAVE SOMENTE APÓS LOGIN
-bg_image_css = ""
-if st.session_state["usuario_logado"] and img_base64:
+# Configuração de estilo: Marca d'água suave no fundo do sistema pós-login
+if img_base64:
     bg_image_css = f"""
     [data-testid="stAppViewContainer"] {{
-        background-image: linear-gradient(rgba(240, 244, 249, 0.92), rgba(240, 244, 249, 0.92)), url('data:image/png;base64,{img_base64}') !important;
-        background-repeat: no-repeat !important;
-        background-position: center center !important;
-        background-attachment: fixed !important;
-        background-size: 40% auto !important;
+        background: url('data:image/png;base64,{img_base64}') no-repeat center center fixed !important;
+        background-size: 55% auto !important;
         background-color: #F0F4F9 !important;
     }}
     .main .block-container {{
-        background-color: transparent !important;
+        background-color: rgba(240, 244, 249, 0.85) !important;
+        border-radius: 16px;
+        padding: 2rem !important;
     }}
     """
 else:
     bg_image_css = """
     [data-testid="stAppViewContainer"] {
-        background-color: #EBF2FA !important;
-        background-image: none !important;
+        background-color: #F0F4F9 !important;
     }
     """
 
@@ -72,7 +65,7 @@ css_code = f"""<style>
         color: #103965 !important;
     }}
 
-    /* CARTÃO DE LOGIN */
+    /* CSS Específico do Cartão de LOGIN */
     .login-container div[data-testid='stForm'] {{
         background-color: #FFFFFF !important;
         padding: 2.2rem 2rem 1.8rem 2rem !important;
@@ -136,9 +129,9 @@ css_code = f"""<style>
         z-index: 2;
     }}
 
-    /* FORMULÁRIOS INTERNOS DO SISTEMA */
+    /* Estilização para formulários internos pós-login */
     div[data-testid='stForm'] {{
-        background-color: rgba(255, 255, 255, 0.96) !important;
+        background-color: rgba(255, 255, 255, 0.95) !important;
         border-radius: 16px !important;
         border: 1px solid #E2E8F0 !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
@@ -172,6 +165,27 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    cursor.execute("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, username TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'operador')")
-    cursor.execute("CREATE TABLE IF NOT EXISTS produtos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT UNIQUE NOT NULL, codigo_barras TEXT, preco_custo REAL NOT NULL, quantidade_estoque INTEGER NOT NULL DEFAULT 0, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
-    cursor.execute("CREATE TABLE IF NOT EXISTS movimentacoes_estoque (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_id INTEGER, tipo TEXT CHECK(tipo IN ('ENTRADA', 'SAIDA')), quantidade INTEGER NOT NULL, preco_unitario REAL NOT NULL, data_movimentacao
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS usuarios ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "nome TEXT NOT NULL, "
+        "username TEXT UNIQUE NOT NULL, "
+        "senha TEXT NOT NULL, "
+        "role TEXT NOT NULL DEFAULT 'operador')"
+    )
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS produtos ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "nome TEXT UNIQUE NOT NULL, "
+        "codigo_barras TEXT, "
+        "preco_custo REAL NOT NULL, "
+        "quantidade_estoque INTEGER NOT NULL DEFAULT 0, "
+        "criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+    )
+    cursor.execute(
+        "CREATE TABLE IF NOT EXISTS movimentacoes_estoque ("
+        "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "produto_id INTEGER, "
+        "tipo TEXT CHECK(tipo IN ('ENTRADA', 'SAIDA')), "
+        "quantidade INTEGER NOT NULL, "
+        "preco_unit
