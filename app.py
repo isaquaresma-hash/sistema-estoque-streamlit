@@ -275,7 +275,6 @@ def init_db():
             )
         """)
         
-        # Cargas Iniciais Padrão
         cursor.execute("SELECT COUNT(*) FROM usuarios WHERE username = 'admin'")
         if cursor.fetchone()[0] == 0:
             cursor.execute("INSERT INTO usuarios (nome, username, senha, role, setor) VALUES (?, ?, ?, ?, ?)",
@@ -345,7 +344,7 @@ if not st.session_state["usuario_logado"]:
     st.stop()
 
 # ==========================================
-# UTILITÁRIOS DE EXPORTAÇÃO (EXCEL & PDF)
+# UTILITÁRIOS DE EXPORTAÇÃO
 # ==========================================
 def gerar_excel_estilizado_bytes(df_exportar, nome_aba="Relatório"):
     buffer = BytesIO()
@@ -423,7 +422,7 @@ def gerar_pdf_generic_bytes(titulo, df_dados):
     return buffer.getvalue()
 
 # ==========================================
-# INTERFACE PRINCIPAL & MENU LATERAL
+# NAVEGAÇÃO LATERAL (8 MÓDULOS)
 # ==========================================
 user_info = st.session_state["usuario_logado"]
 
@@ -457,11 +456,11 @@ if user_info["role"] == "admin":
 menu_opcao = st.sidebar.radio("Navegação do Sistema", list(menu_map.keys()))
 
 # ==========================================
-# MÓDULO 01: PAINEL DE CONTROLE (DASHBOARD)
+# 01. PAINEL DE CONTROLE
 # ==========================================
 if menu_opcao == "01. Painel de Controle":
     st.title("📊 Painel de Controle")
-    st.caption("Visão geral estratégica, alertas críticos e pendências operacionais.")
+    st.caption("Visão rápida de estoque, compras, pendências e visão financeira.")
 
     with sqlite3.connect(DB_NAME) as conn:
         total_materiais = pd.read_sql_query("SELECT COUNT(*) FROM materiais", conn).iloc[0, 0]
@@ -470,30 +469,28 @@ if menu_opcao == "01. Painel de Controle":
         req_pendentes = pd.read_sql_query("SELECT COUNT(*) FROM requisicoes WHERE status = 'Pendente'", conn).iloc[0, 0]
 
     c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Itens Cadastrados", f"{total_materiais}", help="Total de materiais no catálogo")
-    c2.metric("Pedidos em Andamento", f"{pedidos_andamento}", help="Pedidos emitidos ou em transporte")
-    c3.metric("Itens Abaixo do Mínimo", f"{abaixo_minimo}", delta="- Alerta de Reposição" if abaixo_minimo > 0 else "Estoque OK", delta_color="inverse")
-    c4.metric("Solicitações Pendentes", f"{req_pendentes}", help="Aguardando aprovação da gestão")
+    c1.metric("Estoque", f"{total_materiais}", "Itens cadastrados")
+    c2.metric("Compras", f"{pedidos_andamento}", "Pedidos em andamento")
+    c3.metric("Atenção", f"{abaixo_minimo}", "Itens abaixo do mínimo", delta_color="inverse")
+    c4.metric("Solicitações", f"{req_pendentes}", "Aguardando aprovação")
 
     st.divider()
-
     col_esq, col_dir = st.columns(2)
 
     with col_esq:
-        st.subheader("🚨 Alertas de Estoque Mínimo & Validades")
+        st.subheader("🚨 Alertas de Reposição & Validade")
         with sqlite3.connect(DB_NAME) as conn:
             df_alertas = pd.read_sql_query("""
                 SELECT codigo, descricao, quantidade_estoque, estoque_minimo, validade 
                 FROM materiais 
                 WHERE quantidade_estoque <= estoque_minimo OR validade <= DATE('now', '+30 days')
             """, conn)
-        
         if not df_alertas.empty:
             st.dataframe(df_alertas, use_container_width=True)
         else:
-            st.success("Nenhum alerta crítico de estoque no momento.")
+            st.success("Sem alertas críticos no momento.")
 
-        st.subheader("⏳ Pendências de Compras & Aprovações")
+        st.subheader("⏳ Pendências de Compras")
         with sqlite3.connect(DB_NAME) as conn:
             df_pendencias = pd.read_sql_query("""
                 SELECT r.id as Req_ID, m.descricao as Material, r.quantidade, r.prioridade, r.status
@@ -504,7 +501,7 @@ if menu_opcao == "01. Painel de Controle":
         st.dataframe(df_pendencias, use_container_width=True)
 
     with col_dir:
-        st.subheader("💰 Resumo Financeiro de Compras (Mês Atual)")
+        st.subheader("💰 Resumo Financeiro (Compras no Mês)")
         with sqlite3.connect(DB_NAME) as conn:
             df_gastos = pd.read_sql_query("""
                 SELECT m.categoria, SUM(p.valor_total) as Total_Gasto
@@ -513,11 +510,10 @@ if menu_opcao == "01. Painel de Controle":
                 WHERE strftime('%Y-%m', p.criado_em) = strftime('%Y-%m', 'now')
                 GROUP BY m.categoria
             """, conn)
-        
         if not df_gastos.empty:
             st.bar_chart(df_gastos.set_index('categoria'))
         else:
-            st.info("Nenhuma compra efetuada no mês corrente.")
+            st.info("Nenhuma compra efetuada este mês.")
 
         st.subheader("🔄 Últimas Movimentações")
         with sqlite3.connect(DB_NAME) as conn:
@@ -530,37 +526,37 @@ if menu_opcao == "01. Painel de Controle":
         st.dataframe(df_movs, use_container_width=True)
 
 # ==========================================
-# MÓDULO 02: REQUIÇÕES DE COMPRA
+# 02. REQUIÇÕES DE COMPRA
 # ==========================================
 elif menu_opcao == "02. Requisições de Compra":
     st.title("📋 Requisições de Compra")
-    st.caption("Abertura de solicitações, justificativas e esteira de aprovação.")
+    st.caption("Abertura, justificativas e aprovação de solicitações.")
 
-    tab1, tab2 = st.tabs(["➕ Nova Solicitação", "🔍 Minhas & Todas Solicitações"])
+    tab1, tab2 = st.tabs(["➕ Nova Solicitação", "🔍 Gestão de Solicitações"])
 
     with tab1:
         with sqlite3.connect(DB_NAME) as conn:
             df_mats = pd.read_sql_query("SELECT id, codigo, descricao, quantidade_estoque FROM materiais", conn)
 
         if df_mats.empty:
-            st.warning("Nenhum material cadastrado no catálogo. Cadastre materiais primeiro.")
+            st.warning("Cadastre materiais no módulo Catálogo de Materiais primeiro.")
         else:
             with st.form("form_nova_req"):
                 c1, c2 = st.columns(2)
                 with c1:
-                    mat_selecionado = st.selectbox("Selecione o Material", df_mats['descricao'].tolist())
+                    mat_selecionado = st.selectbox("Material", df_mats['descricao'].tolist())
                     mat_row = df_mats[df_mats['descricao'] == mat_selecionado].iloc[0]
-                    st.info(f"Código: **{mat_row['codigo']}** | Saldo em estoque: **{mat_row['quantidade_estoque']}**")
-                    quantidade = st.number_input("Quantidade Necessária", min_value=1, step=1)
+                    st.info(f"Código: **{mat_row['codigo']}** | Saldo atual: **{mat_row['quantidade_estoque']}**")
+                    quantidade = st.number_input("Quantidade Solicitação", min_value=1, step=1)
                 with c2:
                     prioridade = st.selectbox("Prioridade", ["Baixa", "Média", "Alta", "Urgente"])
                     setor = st.text_input("Setor Solicitante", value=user_info['setor'])
                 
-                justificativa = st.text_area("Justificativa Detalhada da Necessidade")
+                justificativa = st.text_area("Justificativa")
                 
-                if st.form_submit_button("🚀 Enviar Requisição"):
+                if st.form_submit_button("🚀 Registrar Solicitação"):
                     if not justificativa.strip():
-                        st.error("A justificativa é obrigatória.")
+                        st.error("Informe a justificativa.")
                     else:
                         with sqlite3.connect(DB_NAME) as conn:
                             cursor = conn.cursor()
@@ -569,66 +565,53 @@ elif menu_opcao == "02. Requisições de Compra":
                                 VALUES (?, ?, ?, ?, ?, ?)
                             """, (user_info['id'], setor, int(mat_row['id']), quantidade, justificativa.strip(), prioridade))
                             conn.commit()
-                        st.success("Requisição aberta com sucesso!")
+                        st.success("Solicitação gravada!")
                         st.rerun()
 
     with tab2:
         with sqlite3.connect(DB_NAME) as conn:
-            query = """
+            df_reqs = pd.read_sql_query("""
                 SELECT r.id, u.nome as Solicitante, r.setor, m.descricao as Material, r.quantidade, 
                        r.prioridade, r.justificativa, r.status, r.criado_em 
                 FROM requisicoes r
                 JOIN usuarios u ON u.id = r.solicitante_id
                 JOIN materiais m ON m.id = r.material_id
                 ORDER BY r.id DESC
-            """
-            df_reqs = pd.read_sql_query(query, conn)
-
+            """, conn)
         st.dataframe(df_reqs, use_container_width=True)
 
         if user_info['role'] == 'admin':
             st.divider()
-            st.subheader("⚡ Painel de Aprovação (Gestão)")
-            
+            st.subheader("⚡ Análise e Aprovação")
             reqs_pendentes = df_reqs[df_reqs['status'] == 'Pendente']
             if not reqs_pendentes.empty:
-                req_id_aprov = st.selectbox("Selecione a Requisição para Avaliar", reqs_pendentes['id'].tolist())
+                req_id_aprov = st.selectbox("Aprovar/Rejeitar Solicitação ID", reqs_pendentes['id'].tolist())
                 c1, c2 = st.columns(2)
                 with c1:
                     if st.button("✅ Aprovar Solicitação", use_container_width=True):
                         with sqlite3.connect(DB_NAME) as conn:
                             cursor = conn.cursor()
-                            cursor.execute("""
-                                UPDATE requisicoes 
-                                SET status = 'Aprovada', aprovador_id = ?, data_aprovacao = CURRENT_TIMESTAMP 
-                                WHERE id = ?
-                            """, (user_info['id'], req_id_aprov))
+                            cursor.execute("UPDATE requisicoes SET status = 'Aprovada', aprovador_id = ?, data_aprovacao = CURRENT_TIMESTAMP WHERE id = ?", (user_info['id'], req_id_aprov))
                             conn.commit()
-                        st.success(f"Requisição #{req_id_aprov} APROVADA!")
+                        st.success(f"Solicitação #{req_id_aprov} Aprovada.")
                         st.rerun()
                 with c2:
                     if st.button("❌ Rejeitar Solicitação", use_container_width=True):
                         with sqlite3.connect(DB_NAME) as conn:
                             cursor = conn.cursor()
-                            cursor.execute("""
-                                UPDATE requisicoes 
-                                SET status = 'Rejeitada', aprovador_id = ?, data_aprovacao = CURRENT_TIMESTAMP 
-                                WHERE id = ?
-                            """, (user_info['id'], req_id_aprov))
+                            cursor.execute("UPDATE requisicoes SET status = 'Rejeitada', aprovador_id = ?, data_aprovacao = CURRENT_TIMESTAMP WHERE id = ?", (user_info['id'], req_id_aprov))
                             conn.commit()
-                        st.warning(f"Requisição #{req_id_aprov} REJEITADA.")
+                        st.warning(f"Solicitação #{req_id_aprov} Rejeitada.")
                         st.rerun()
-            else:
-                st.info("Nenhuma requisição pendente de aprovação.")
 
 # ==========================================
-# MÓDULO 03: GESTÃO DE COMPRAS
+# 03. GESTÃO DE COMPRAS
 # ==========================================
 elif menu_opcao == "03. Gestão de Compras":
     st.title("🛍️ Gestão de Compras")
-    st.caption("Cotações de fornecedores, comparativos e emissão de Pedidos de Compra.")
+    st.caption("Cotações, comparativos e emissão de Pedidos de Compra.")
 
-    tab1, tab2, tab3 = st.tabs(["📑 Registrar Cotação", "⚖️ Comparativo & Emitir Pedido", "📦 Pedidos Emitidos"])
+    tab1, tab2, tab3 = st.tabs(["📑 Registrar Cotação", "⚖️ Selecionar Cotação & Emitir Pedido", "📦 Pedidos de Compra"])
 
     with tab1:
         with sqlite3.connect(DB_NAME) as conn:
@@ -641,34 +624,29 @@ elif menu_opcao == "03. Gestão de Compras":
             df_fornecedores = pd.read_sql_query("SELECT id, razao_social FROM fornecedores", conn)
 
         if df_req_aprovadas.empty:
-            st.info("Nenhuma requisição aprovada aguardando cotação.")
+            st.info("Sem solicitações aprovadas pendentes de cotação.")
         elif df_fornecedores.empty:
-            st.warning("Nenhum fornecedor cadastrado. Cadastre fornecedores no Módulo 06.")
+            st.warning("Cadastre fornecedores primeiro.")
         else:
             with st.form("form_cotacao"):
-                req_sel = st.selectbox("Selecione a Requisição Aprovada", df_req_aprovadas['id'].tolist(), 
-                                      format_func=lambda x: f"Req #{x} - {df_req_aprovadas[df_req_aprovadas['id']==x]['Material'].values[0]}")
-                forn_sel = st.selectbox("Fornecedor Cotação", df_fornecedores['razao_social'].tolist())
+                req_sel = st.selectbox("Solicitação Aprovada ID", df_req_aprovadas['id'].tolist())
+                forn_sel = st.selectbox("Fornecedor", df_fornecedores['razao_social'].tolist())
                 forn_id = df_fornecedores[df_fornecedores['razao_social'] == forn_sel]['id'].values[0]
                 
                 c1, c2 = st.columns(2)
                 with c1:
-                    preco_unit = st.number_input("Preço Unitário Cotado (R$)", min_value=0.01, format="%.2f")
+                    preco_unit = st.number_input("Preço Unitário (R$)", min_value=0.01, format="%.2f")
                 with c2:
-                    prazo_dias = st.number_input("Prazo de Entrega (em Dias)", min_value=1, step=1)
-                    
-                obs = st.text_input("Observações Comerciais")
-                
-                if st.form_submit_button("💾 Salvar Cotação"):
+                    prazo_dias = st.number_input("Prazo de Entrega (Dias)", min_value=1, step=1)
+                obs = st.text_input("Observação")
+
+                if st.form_submit_button("💾 Gravar Cotação"):
                     with sqlite3.connect(DB_NAME) as conn:
                         cursor = conn.cursor()
-                        cursor.execute("""
-                            INSERT INTO cotacoes (requisicao_id, fornecedor_id, preco_unitario, prazo_entrega_dias, observacao)
-                            VALUES (?, ?, ?, ?, ?)
-                        """, (req_sel, int(forn_id), preco_unit, prazo_dias, obs))
+                        cursor.execute("INSERT INTO cotacoes (requisicao_id, fornecedor_id, preco_unitario, prazo_entrega_dias, observacao) VALUES (?, ?, ?, ?, ?)", (req_sel, int(forn_id), preco_unit, prazo_dias, obs))
                         cursor.execute("UPDATE requisicoes SET status = 'Em Cotação' WHERE id = ?", (req_sel,))
                         conn.commit()
-                    st.success("Cotação inserida com sucesso!")
+                    st.success("Cotação adicionada!")
                     st.rerun()
 
     with tab2:
@@ -685,16 +663,13 @@ elif menu_opcao == "03. Gestão de Compras":
             """, conn)
 
         if df_cotacoes.empty:
-            st.info("Não há cotações pendentes de análise para emissão de pedido.")
+            st.info("Sem cotações pendentes de emissão.")
         else:
-            st.subheader("💡 Mapa Comparativo de Preços")
             st.dataframe(df_cotacoes, use_container_width=True)
-
-            cotacao_vencedora_id = st.selectbox("Selecione a Cotação Vencedora", df_cotacoes['Cotacao_ID'].tolist())
+            cot_vencedora = st.selectbox("Selecione Cotação para Pedido", df_cotacoes['Cotacao_ID'].tolist())
             
-            if st.button("🛒 Gerar Pedido de Compra Oficial"):
-                cot_row = df_cotacoes[df_cotacoes['Cotacao_ID'] == cotacao_vencedora_id].iloc[0]
-                
+            if st.button("🛒 Emitir Pedido de Compra"):
+                cot_row = df_cotacoes[df_cotacoes['Cotacao_ID'] == cot_vencedora].iloc[0]
                 with sqlite3.connect(DB_NAME) as conn:
                     cursor = conn.cursor()
                     cursor.execute("""
@@ -703,10 +678,9 @@ elif menu_opcao == "03. Gestão de Compras":
                     """, (int(cot_row['requisicao_id']), int(cot_row['Cotacao_ID']), int(cot_row['Fornecedor_ID']), 
                           int(cot_row['Material_ID']), int(cot_row['quantidade']), float(cot_row['preco_unitario']), 
                           float(cot_row['Total']), user_info['id']))
-                    
                     cursor.execute("UPDATE requisicoes SET status = 'Atendida' WHERE id = ?", (int(cot_row['requisicao_id']),))
                     conn.commit()
-                st.success(f"Pedido de Compra gerado com sucesso! (Vincular ao recebimento posteriormente)")
+                st.success("Pedido de compra emitido com sucesso!")
                 st.rerun()
 
     with tab3:
@@ -722,20 +696,17 @@ elif menu_opcao == "03. Gestão de Compras":
         st.dataframe(df_pedidos, use_container_width=True)
 
 # ==========================================
-# MÓDULO 04: CONTROLE DE ESTOQUE
+# 04. CONTROLE DE ESTOQUE
 # ==========================================
 elif menu_opcao == "04. Controle de Estoque":
     st.title("📦 Controle de Estoque")
-    st.caption("Conferência de recebimentos, saídas operacionais e ajustes de inventário.")
+    st.caption("Recebimento com conferência, saídas vinculadas e inventários.")
 
-    tab1, tab2, tab3 = tab_conferência, tab_saida, tab_ajuste = st.tabs([
-        "📥 Conferência e Recebimento", "📤 Saída / Entrega ao Solicitante", "🛠️ Ajuste de Inventário"
-    ])
+    tab1, tab2, tab3 = st.tabs(["📥 Recebimento & Conferência", "📤 Entrega / Saída", "🛠️ Ajustes & Inventário"])
 
     with tab1:
-        st.subheader("Recebimento Físico e Fiscal (Conferência)")
         with sqlite3.connect(DB_NAME) as conn:
-            df_pedidos_pendentes = pd.read_sql_query("""
+            df_pedidos_trans = pd.read_sql_query("""
                 SELECT p.id as Pedido_ID, m.id as Material_ID, m.descricao as Material, 
                        p.quantidade, p.preco_unitario, f.razao_social as Fornecedor
                 FROM pedidos_compra p
@@ -744,136 +715,104 @@ elif menu_opcao == "04. Controle de Estoque":
                 WHERE p.status IN ('Emitido', 'Em Transporte')
             """, conn)
 
-        if df_pedidos_pendentes.empty:
-            st.info("Nenhum pedido de compra aguardando recebimento/conferência.")
+        if df_pedidos_trans.empty:
+            st.info("Nenhum pedido aguardando conferência.")
         else:
-            with st.form("form_recebimento"):
-                ped_id_sel = st.selectbox("Selecione o Pedido em Trânsito", df_pedidos_pendentes['Pedido_ID'].tolist())
-                ped_row = df_pedidos_pendentes[df_pedidos_pendentes['Pedido_ID'] == ped_id_sel].iloc[0]
+            with st.form("form_rec"):
+                ped_sel = st.selectbox("Pedido em Trânsito ID", df_pedidos_trans['Pedido_ID'].tolist())
+                ped_row = df_pedidos_trans[df_pedidos_trans['Pedido_ID'] == ped_sel].iloc[0]
                 
-                st.info(f"Item: **{ped_row['Material']}** | Qtd Pedida: **{ped_row['quantidade']}**")
-                
+                st.info(f"Item: **{ped_row['Material']}** | Qtd Esperada: **{ped_row['quantidade']}**")
                 c1, c2 = st.columns(2)
                 with c1:
-                    nota_fiscal = st.text_input("Número da Nota Fiscal (NF-e)")
-                    qtd_recebida = st.number_input("Quantidade Conferida e Entregue", min_value=1, value=int(ped_row['quantidade']))
+                    nf = st.text_input("Número Nota Fiscal")
+                    qtd_rec = st.number_input("Qtd Conferida", min_value=1, value=int(ped_row['quantidade']))
                 with c2:
-                    divergencia = st.checkbox("Existe Divergência?")
-                    obs_div = st.text_area("Observações de Divergência/Qualidade") if divergencia else ""
+                    div = st.checkbox("Teve divergência?")
+                    obs_div = st.text_area("Observação Divergência") if div else ""
 
-                if st.form_submit_button("✅ Concluir Conferência & Dar Entrada"):
-                    if not nota_fiscal.strip():
-                        st.error("Número da Nota Fiscal é obrigatório.")
+                if st.form_submit_button("✅ Efetuar Entrada no Estoque"):
+                    if not nf.strip():
+                        st.error("Insira o número da Nota Fiscal.")
                     else:
                         with sqlite3.connect(DB_NAME) as conn:
                             cursor = conn.cursor()
-                            # 1. Registra Recebimento
-                            cursor.execute("""
-                                INSERT INTO recebimentos (pedido_id, numero_nota_fiscal, quantidade_recebida, tem_divergencia, observacao_divergencia, responsavel_id)
-                                VALUES (?, ?, ?, ?, ?, ?)
-                            """, (ped_id_sel, nota_fiscal, qtd_recebida, 1 if divergencia else 0, obs_div, user_info['id']))
-                            
-                            # 2. Atualiza Saldo do Estoque
-                            cursor.execute("UPDATE materiais SET quantidade_estoque = quantidade_estoque + ? WHERE id = ?", (qtd_recebida, int(ped_row['Material_ID'])))
-                            
-                            # 3. Registra Movimentação de Entrada
-                            cursor.execute("""
-                                INSERT INTO movimentacoes_estoque (material_id, tipo, quantidade, preco_unitario, motivo, usuario_id)
-                                VALUES (?, 'ENTRADA', ?, ?, ?, ?)
-                            """, (int(ped_row['Material_ID']), qtd_recebida, float(ped_row['preco_unitario']), f"NF: {nota_fiscal}", user_info['id']))
-                            
-                            # 4. Atualiza Status do Pedido
-                            cursor.execute("UPDATE pedidos_compra SET status = 'Concluído' WHERE id = ?", (ped_id_sel,))
+                            cursor.execute("INSERT INTO recebimentos (pedido_id, numero_nota_fiscal, quantidade_recebida, tem_divergencia, observacao_divergencia, responsavel_id) VALUES (?, ?, ?, ?, ?, ?)",
+                                           (ped_sel, nf, qtd_rec, 1 if div else 0, obs_div, user_info['id']))
+                            cursor.execute("UPDATE materiais SET quantidade_estoque = quantidade_estoque + ? WHERE id = ?", (qtd_rec, int(ped_row['Material_ID'])))
+                            cursor.execute("INSERT INTO movimentacoes_estoque (material_id, tipo, quantidade, preco_unitario, motivo, usuario_id) VALUES (?, 'ENTRADA', ?, ?, ?, ?)",
+                                           (int(ped_row['Material_ID']), qtd_rec, float(ped_row['preco_unitario']), f"NF: {nf}", user_info['id']))
+                            cursor.execute("UPDATE pedidos_compra SET status = 'Concluído' WHERE id = ?", (ped_sel,))
                             conn.commit()
-                        st.success("Recebimento concluído com sucesso e saldo atualizado!")
+                        st.success("Estoque atualizado e recebimento conferido!")
                         st.rerun()
 
     with tab2:
-        st.subheader("Dar Saída / Entregar ao Solicitante")
         with sqlite3.connect(DB_NAME) as conn:
-            df_mats = pd.read_sql_query("SELECT id, descricao, quantidade_estoque, preco_custo FROM materiais WHERE quantidade_estoque > 0", conn)
-            
-        if df_mats.empty:
-            st.warning("Nenhum material disponível em estoque para dar saída.")
+            df_mats_disponiveis = pd.read_sql_query("SELECT id, descricao, quantidade_estoque, preco_custo FROM materiais WHERE quantidade_estoque > 0", conn)
+
+        if df_mats_disponiveis.empty:
+            st.warning("Sem estoque disponível para saída.")
         else:
-            with st.form("form_saida"):
+            with st.form("form_saida_mat"):
                 c1, c2 = st.columns(2)
                 with c1:
-                    mat_sel = st.selectbox("Selecione o Material para Baixa", df_mats['descricao'].tolist())
-                    mat_row = df_mats[df_mats['descricao'] == mat_sel].iloc[0]
-                    st.info(f"Saldo Atual: **{mat_row['quantidade_estoque']}** unidades")
-                    qtd_saida = st.number_input("Quantidade de Saída", min_value=1, max_value=int(mat_row['quantidade_estoque']))
+                    mat_saida = st.selectbox("Material para Baixa", df_mats_disponiveis['descricao'].tolist())
+                    m_row = df_mats_disponiveis[df_mats_disponiveis['descricao'] == mat_saida].iloc[0]
+                    qtd_s = st.number_input("Quantidade Baixa", min_value=1, max_value=int(m_row['quantidade_estoque']))
                 with c2:
-                    setor_destino = st.text_input("Setor de Destino")
-                    responsavel_retirada = st.text_input("Responsável pela Retirada")
+                    setor_dest = st.text_input("Setor de Destino")
+                    resp_ret = st.text_input("Responsável Retirada")
 
-                if st.form_submit_button("📤 Confirmar Saída"):
+                if st.form_submit_button("📤 Registrar Saída"):
                     with sqlite3.connect(DB_NAME) as conn:
                         cursor = conn.cursor()
-                        # Atualiza Saldo
-                        cursor.execute("UPDATE materiais SET quantidade_estoque = quantidade_estoque - ? WHERE id = ?", (qtd_saida, int(mat_row['id'])))
-                        # Movimentação
-                        cursor.execute("""
-                            INSERT INTO movimentacoes_estoque (material_id, tipo, quantidade, preco_unitario, motivo, usuario_id)
-                            VALUES (?, 'SAIDA', ?, ?, ?, ?)
-                        """, (int(mat_row['id']), qtd_saida, float(mat_row['preco_custo']), f"Entregue para {responsavel_retirada} ({setor_destino})", user_info['id']))
-                        # Registro de Entrega
-                        cursor.execute("""
-                            INSERT INTO entregas (material_id, quantidade, setor_destino, responsavel_retirada, usuario_entrega_id)
-                            VALUES (?, ?, ?, ?, ?)
-                        """, (int(mat_row['id']), qtd_saida, setor_destino, responsavel_retirada, user_info['id']))
+                        cursor.execute("UPDATE materiais SET quantidade_estoque = quantidade_estoque - ? WHERE id = ?", (qtd_s, int(m_row['id'])))
+                        cursor.execute("INSERT INTO movimentacoes_estoque (material_id, tipo, quantidade, preco_unitario, motivo, usuario_id) VALUES (?, 'SAIDA', ?, ?, ?, ?)",
+                                       (int(m_row['id']), qtd_s, float(m_row['preco_custo']), f"Entrega {resp_ret} ({setor_dest})", user_info['id']))
+                        cursor.execute("INSERT INTO entregas (material_id, quantidade, setor_destino, responsavel_retirada, usuario_entrega_id) VALUES (?, ?, ?, ?, ?)",
+                                       (int(m_row['id']), qtd_s, setor_dest, resp_ret, user_info['id']))
                         conn.commit()
-                    st.success("Baixa em estoque realizada com sucesso!")
+                    st.success("Saída de estoque processada.")
                     st.rerun()
 
     with tab3:
-        st.subheader("Ajuste Manual e Inventário")
-        st.warning("⚠️ Ajustes de saldo exigem obrigatoriamente justificativa para auditoria.")
         with sqlite3.connect(DB_NAME) as conn:
-            df_mats_all = pd.read_sql_query("SELECT id, descricao, quantidade_estoque, preco_custo FROM materiais", conn)
-            
-        with st.form("form_ajuste"):
-            mat_ajuste_sel = st.selectbox("Material para Ajuste", df_mats_all['descricao'].tolist())
-            mat_aj_row = df_mats_all[df_mats_all['descricao'] == mat_ajuste_sel].iloc[0]
+            df_mats_todos = pd.read_sql_query("SELECT id, descricao, quantidade_estoque, preco_custo FROM materiais", conn)
+
+        with st.form("form_ajuste_inv"):
+            mat_ajust = st.selectbox("Material para Ajuste", df_mats_todos['descricao'].tolist())
+            maj_row = df_mats_todos[df_mats_todos['descricao'] == mat_ajust].iloc[0]
             
             c1, c2 = st.columns(2)
             with c1:
-                novo_saldo = st.number_input("Novo Saldo Apurado (Físico)", min_value=0, value=int(mat_aj_row['quantidade_estoque']))
+                saldo_apurado = st.number_input("Saldo Físico Real Apurado", min_value=0, value=int(maj_row['quantidade_estoque']))
             with c2:
-                motivo_ajuste = st.text_input("Motivo do Ajuste / Divergência de Inventário")
-                
-            if st.form_submit_button("🛠️ Aplicar Ajuste"):
-                if not motivo_ajuste.strip():
-                    st.error("A justificativa é obrigatória para efetuar ajustes.")
+                motivo = st.text_input("Justificativa Obrigatória de Ajuste")
+
+            if st.form_submit_button("🛠️ Salvar Ajuste"):
+                if not motivo.strip():
+                    st.error("Informe a justificativa.")
                 else:
-                    diferenca = novo_saldo - mat_aj_row['quantidade_estoque']
+                    dif = saldo_apurado - maj_row['quantidade_estoque']
                     with sqlite3.connect(DB_NAME) as conn:
                         cursor = conn.cursor()
-                        cursor.execute("UPDATE materiais SET quantidade_estoque = ? WHERE id = ?", (novo_saldo, int(mat_aj_row['id'])))
-                        cursor.execute("""
-                            INSERT INTO movimentacoes_estoque (material_id, tipo, quantidade, preco_unitario, motivo, usuario_id)
-                            VALUES (?, 'AJUSTE', ?, ?, ?, ?)
-                        """, (int(mat_aj_row['id']), diferenca, float(mat_aj_row['preco_custo']), motivo_ajuste, user_info['id']))
+                        cursor.execute("UPDATE materiais SET quantidade_estoque = ? WHERE id = ?", (saldo_apurado, int(maj_row['id'])))
+                        cursor.execute("INSERT INTO movimentacoes_estoque (material_id, tipo, quantidade, preco_unitario, motivo, usuario_id) VALUES (?, 'AJUSTE', ?, ?, ?, ?)",
+                                       (int(maj_row['id']), dif, float(maj_row['preco_custo']), motivo, user_info['id']))
                         conn.commit()
-                    st.success("Inventário ajustado e registrado no histórico de auditoria!")
+                    st.success("Ajuste registrado.")
                     st.rerun()
 
 # ==========================================
-# MÓDULO 05: CATÁLOGO DE MATERIAIS
+# 05. CATÁLOGO DE MATERIAIS
 # ==========================================
 elif menu_opcao == "05. Catálogo de Materiais":
     st.title("📦 Catálogo de Materiais")
-    st.caption("Cadastro padronizado, categorias, parâmetros de estoque mínimo e dados físicos.")
+    st.caption("Cadastro, unidades, lote, validade e estoques mínimos.")
 
-    tab1, tab2 = st.tabs(["➕ Cadastrar Material", "📋 Materiais Cadastrados"])
+    tab1, tab2 = st.tabs(["➕ Novo Material", "📋 Itens Cadastrados"])
 
     with tab1:
-        with st.form("form_cad_material"):
-            c1, c2, c3 = st.columns(3)
-            with c1:
-                codigo = st.text_input("Código / SKU*", placeholder="MAT-001")
-                descricao = st.text_input("Descrição Completa*")
-                categoria = st.selectbox("Categoria", ["Escritório", "Informática", "Manutenção", "Limpeza", "EPIs", "Outros"])
-            with c2:
-                unidade = st.selectbox("Unidade de Medida", ["UN", "CX", "KG", "L", "PCT", "M"])
-                marca_ref = st.text_input("Marca de Referência")
+        with st.form("form_cad_mat"):
+            c1, c2, c3 = st
