@@ -5,10 +5,15 @@ import hashlib
 import base64
 import os
 from datetime import datetime
-from io import BytesIO
+import io
 
-from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
+# Importação protegida para evitar ModuleNotFoundError no arranque
+try:
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    HAS_OPENPYXL = True
+except ImportError:
+    HAS_OPENPYXL = False
 
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -40,7 +45,6 @@ img_base64 = get_base64_of_bin_file(img_name)
 # ESTILIZAÇÃO CSS
 # ==========================================
 css_code = """<style>
-    /* Ocultar o cabeçalho superior nativo do Streamlit */
     header[data-testid="stHeader"] {
         display: none !important;
     }
@@ -55,7 +59,6 @@ css_code = """<style>
         max-width: 1200px !important;
     }
 
-    /* Sidebar */
     [data-testid='stSidebar'] {
         background-color: #FFFFFF !important;
         border-right: 1px solid #D7E3F1;
@@ -64,7 +67,6 @@ css_code = """<style>
         color: #103965 !important;
     }
 
-    /* Container de Login centralizado e expandido */
     .login-container {
         display: flex;
         justify-content: center;
@@ -72,7 +74,6 @@ css_code = """<style>
         margin-top: 2rem;
     }
 
-    /* Cartão de LOGIN expandido */
     .login-container div[data-testid='stForm'] {
         background-color: #FFFFFF !important;
         padding: 2.5rem 2.5rem 2rem 2.5rem !important;
@@ -248,68 +249,81 @@ if user_info["role"] == "admin":
 menu = st.sidebar.radio("Navegação do Sistema", menu_options)
 
 # ==========================================
-# FUNÇÃO DE EXPORTAÇÃO EXCEL (NOVA ESTRUTURA EXACTA DO EXEMPLO)
+# GERADORES DE EXCEL (AZUL #0D47A1) E PDF
 # ==========================================
-def gerar_excel_estilizado_bytes(df_exportar, nome_aba="Relatório"):
-    """Gera o arquivo Excel em memória utilizando a mesma estrutura do modelo enviado, em tom Azul (#0D47A1)."""
-    buffer = BytesIO()
+def gerar_excel_estilizado(df):
+    """Gera o arquivo Excel .xlsx estilizado em Tom Azul Escuro (#0D47A1)"""
+    buffer = io.BytesIO()
+    df_export = df.copy()
     
-    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-        df_exportar.to_excel(writer, index=False, sheet_name=nome_aba)
-        
-        workbook = writer.book
-        worksheet = writer.sheets[nome_aba]
-        
-        # Cabeçalho em Tom Azul Escuro (#0D47A1) com Texto Branco em Negrito
-        header_fill = PatternFill(start_color="0D47A1", end_color="0D47A1", fill_type="solid")
-        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-        
-        # Estilo das bordas das células
-        thin_border = Border(
-            bottom=Side(style='thin', color='E0E0E0'),
-            left=Side(style='thin', color='F0F0F0'),
-            right=Side(style='thin', color='F0F0F0')
-        )
-        
-        colunas_lista = list(df_exportar.columns)
-        
-        for col_num, col_name in enumerate(colunas_lista, 1):
-            col_letter = get_column_letter(col_num)
-            cell = worksheet.cell(row=1, column=col_num)
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.alignment = Alignment(horizontal="center", vertical="center")
+    if HAS_OPENPYXL:
+        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
+            df_export.to_excel(writer, index=False, sheet_name='Relatório')
+            worksheet = writer.sheets['Relatório']
             
-            nome_col_lower = str(col_name).lower()
+            # Cabeçalho em Tom Azul Escuro (#0D47A1) com Texto Branco
+            header_fill = PatternFill(start_color="0D47A1", end_color="0D47A1", fill_type="solid")
+            header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+            header_alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
             
-            # Identificação de campos com moeda
-            is_moeda = ("preço" in nome_col_lower or "custo" in nome_col_lower or "valor" in nome_col_lower or "diferença preço" in nome_col_lower)
+            # Estilos das células de dados
+            data_font = Font(name="Calibri", size=11)
+            left_alignment = Alignment(horizontal="left", vertical="center")
+            center_alignment = Alignment(horizontal="center", vertical="center")
+            right_alignment = Alignment(horizontal="right", vertical="center")
             
-            for row_num in range(2, len(df_exportar) + 2):
-                data_cell = worksheet.cell(row=row_num, column=col_num)
-                data_cell.border = thin_border
-                
-                val = data_cell.value
-                if isinstance(val, (int, float)):
-                    if is_moeda:
-                        data_cell.number_format = 'R$ #,##0.00'
-                        data_cell.alignment = Alignment(horizontal="right", vertical="center")
-                    else:
-                        data_cell.alignment = Alignment(horizontal="center", vertical="center")
-                else:
-                    data_cell.alignment = Alignment(horizontal="left", vertical="center")
-
-            # Largura automática das colunas
-            max_len = max(
-                len(str(col_name)),
-                max([len(str(worksheet.cell(row=r, column=col_num).value or '')) for r in range(2, len(df_exportar) + 2)], default=0)
+            thin_border = Border(
+                bottom=Side(style='thin', color='E0E0E0'),
+                left=Side(style='thin', color='F0F0F0'),
+                right=Side(style='thin', color='F0F0F0')
             )
-            worksheet.column_dimensions[col_letter].width = max(max_len + 5, 14)
 
-    return buffer.getvalue()
+            # Estilização do cabeçalho
+            for col_num in range(1, len(df_export.columns) + 1):
+                cell = worksheet.cell(row=1, column=col_num)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = header_alignment
+                
+            worksheet.row_dimensions[1].height = 28
+
+            # Estilização das linhas de dados
+            for row_num in range(2, len(df_export) + 2):
+                worksheet.row_dimensions[row_num].height = 22
+                for col_num in range(1, len(df_export.columns) + 1):
+                    cell = worksheet.cell(row=row_num, column=col_num)
+                    cell.font = data_font
+                    cell.border = thin_border
+                    
+                    val = cell.value
+                    col_name = str(worksheet.cell(row=1, column=col_num).value)
+                    
+                    if isinstance(val, (int, float)):
+                        if 'Preço' in col_name or 'Valor' in col_name:
+                            cell.number_format = 'R$ #,##0.00'
+                            cell.alignment = right_alignment
+                        else:
+                            cell.alignment = center_alignment
+                    elif str(val).isupper() or len(str(val)) <= 10:
+                        cell.alignment = center_alignment
+                    else:
+                        cell.alignment = left_alignment
+
+            # Ajuste de largura das colunas
+            for col in worksheet.columns:
+                max_len = max(len(str(cell.value or '')) for cell in col)
+                col_letter = col[0].column_letter
+                worksheet.column_dimensions[col_letter].width = max(max_len + 6, 16)
+
+        buffer.seek(0)
+        return buffer.getvalue(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "relatorio_estoque.xlsx"
+    else:
+        # Fallback para CSV com delimitador ';' e UTF-8 BOM para o Excel abrir em colunas nativas
+        csv_bytes = df_export.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+        return csv_bytes, "text/csv", "relatorio_estoque.csv"
 
 def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
-    buffer = BytesIO()
+    buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
     story = []
     
@@ -487,13 +501,12 @@ elif menu == "📊 Dashboard & Relatórios":
             st.markdown("### Histórico de Lançamentos:")
             st.dataframe(df_mov, use_container_width=True)
             
-            # Exportação utilizando o novo gerador Excel
-            excel_historico = gerar_excel_estilizado_bytes(df_mov, nome_aba="Histórico")
+            file_bytes, mime_type, file_name = gerar_excel_estilizado(df_mov)
             st.download_button(
-                label="📥 Baixar Histórico Geral (.xlsx)",
-                data=excel_historico,
-                file_name=f"historico_movimentacoes_{datetime.now().strftime('%Y_%m_%d')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                label="📥 Baixar Planilha em Excel (.xlsx)",
+                data=file_bytes,
+                file_name=file_name,
+                mime=mime_type
             )
         else:
             col1, col2 = st.columns(2)
@@ -535,12 +548,12 @@ elif menu == "📊 Dashboard & Relatórios":
             exp_col1, exp_col2 = st.columns(2)
             
             with exp_col1:
-                excel_comparativo = gerar_excel_estilizado_bytes(df_comp, nome_aba="Relatório Comparativo")
+                excel_bytes, mime_type, file_name = gerar_excel_estilizado(df_comp)
                 st.download_button(
                     label="📊 Baixar Planilha Formatada (.xlsx)",
-                    data=excel_comparativo,
+                    data=excel_bytes,
                     file_name=f"relatorio_estoque_{mes_anterior}_vs_{mes_atual}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    mime=mime_type,
                     use_container_width=True
                 )
             
