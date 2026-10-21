@@ -150,6 +150,23 @@ def verificar_senha(password, senha_salva):
     # Compatibilidade com contas criadas pela versão anterior do sistema.
     return hmac.compare_digest(hashlib.sha256(password.encode("utf-8")).hexdigest(), senha_salva)
 
+def inteiro_seguro(valor, padrao=0):
+    """Converte valores de estoque para inteiro, tratando NULL, NaN e textos inválidos."""
+    try:
+        if valor is None or pd.isna(valor):
+            return padrao
+        texto = str(valor).strip()
+        if not texto:
+            return padrao
+        # Aceita números inteiros e valores como "3.0" vindos de bases antigas.
+        numero = float(texto.replace(",", "."))
+        if not numero == numero or numero in (float("inf"), float("-inf")):
+            return padrao
+        return int(numero)
+    except (TypeError, ValueError, OverflowError):
+        return padrao
+
+
 def init_db():
     with sqlite3.connect(DB_NAME, timeout=30) as conn:
         conn.execute("PRAGMA foreign_keys = ON")
@@ -157,6 +174,16 @@ def init_db():
         cursor.execute("CREATE TABLE IF NOT EXISTS usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT NOT NULL, username TEXT UNIQUE NOT NULL, senha TEXT NOT NULL, role TEXT NOT NULL DEFAULT 'operador')")
         cursor.execute("CREATE TABLE IF NOT EXISTS produtos (id INTEGER PRIMARY KEY AUTOINCREMENT, nome TEXT UNIQUE NOT NULL, codigo_barras TEXT, preco_custo REAL NOT NULL, quantidade_estoque INTEGER NOT NULL DEFAULT 0, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)")
         cursor.execute("CREATE TABLE IF NOT EXISTS movimentacoes_estoque (id INTEGER PRIMARY KEY AUTOINCREMENT, produto_id INTEGER, tipo TEXT CHECK(tipo IN ('ENTRADA', 'SAIDA')), quantidade INTEGER NOT NULL, preco_unitario REAL NOT NULL, data_compra DATE, data_movimentacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY(produto_id) REFERENCES produtos(id))")
+
+        # Corrige registros legados com saldo NULL, vazio ou armazenado como texto inválido.
+        cursor.execute("SELECT id, quantidade_estoque FROM produtos")
+        for produto_id, quantidade_db in cursor.fetchall():
+            quantidade_corrigida = inteiro_seguro(quantidade_db)
+            if quantidade_db != quantidade_corrigida:
+                cursor.execute(
+                    "UPDATE produtos SET quantidade_estoque = ? WHERE id = ?",
+                    (quantidade_corrigida, produto_id),
+                )
         
         cursor.execute("PRAGMA table_info(movimentacoes_estoque)")
         columns = [col[1] for col in cursor.fetchall()]
@@ -459,7 +486,7 @@ if menu == "📦 Gestão de Produtos":
                 key="produto_para_excluir"
             )
             dados_excluir = produtos_excluir[produtos_excluir["nome"] == nome_excluir].iloc[0]
-            st.write(f"Estoque atual: **{int(dados_excluir['quantidade_estoque'])}** unidade(s)")
+            st.write(f"Estoque atual: **{inteiro_seguro(dados_excluir['quantidade_estoque'])}** unidade(s)")
             confirmar_exclusao = st.checkbox(
                 "Confirmo que desejo excluir este produto permanentemente.",
                 key="confirmar_exclusao_produto"
@@ -489,7 +516,7 @@ elif menu == "🔄 Movimentação de Estoque":
             prod_nome = st.selectbox("Selecione o Produto", produtos_df['nome'].tolist())
             prod_info = produtos_df[produtos_df['nome'] == prod_nome].iloc[0]
             
-            saldo_atual = int(prod_info['quantidade_estoque'])
+            saldo_atual = inteiro_seguro(prod_info['quantidade_estoque'])
             preco_base = float(prod_info['preco_custo'])
             valor_total_estoque = saldo_atual * preco_base
             
@@ -548,7 +575,7 @@ elif menu == "🔄 Movimentação de Estoque":
                             saldo_result = cursor.fetchone()
                             if saldo_result is None:
                                 raise ValueError("O produto selecionado não existe mais no banco de dados.")
-                            saldo_banco = int(saldo_result[0])
+                            saldo_banco = inteiro_seguro(saldo_result[0])
                             if tipo == "SAIDA" and int(quantidade) > saldo_banco:
                                 raise ValueError("A quantidade solicitada excede o saldo atual em estoque.")
                             nova_qtd = saldo_banco + int(quantidade) if tipo == "ENTRADA" else saldo_banco - int(quantidade)
@@ -624,7 +651,7 @@ elif menu == "📊 Dashboard & Relatórios":
                         if not saldo_result:
                             erro_exclusao = "O produto associado a este lançamento não foi encontrado."
                         else:
-                            saldo = int(saldo_result[0])
+                            saldo = inteiro_seguro(saldo_result[0])
                             novo_saldo = saldo - int(qtd_excluida) if tipo_excluido == "ENTRADA" else saldo + int(qtd_excluida)
                             if novo_saldo < 0:
                                 erro_exclusao = (
