@@ -33,7 +33,6 @@ img_name = "Sistema de Compras e Estoque.png"
 img_base64 = get_base64_of_bin_file(img_name)
 
 # Configuração de estilo: Marca d'água suave no fundo do sistema pós-login
-bg_image_css = ""
 if img_base64:
     bg_image_css = f"""
     [data-testid="stAppViewContainer"] {{
@@ -367,4 +366,149 @@ if menu == "📦 Gestão de Produtos":
             
             with st.form("form_editar"):
                 novo_nome = st.text_input("Nome", value=dados_prod['nome'])
-                novo_preco = st.number_input("Preço de
+                novo_preco = st.number_input("Preço de Custo (R$)", min_value=0.01, value=float(dados_prod['preco_custo']), format="%.2f")
+                
+                if st.form_submit_button("Atualizar Informações"):
+                    conn = sqlite3.connect(DB_NAME)
+                    cursor = conn.cursor()
+                    cursor.execute("UPDATE produtos SET nome = ?, preco_custo = ? WHERE id = ?", (novo_nome, novo_preco, int(dados_prod['id'])))
+                    conn.commit()
+                    conn.close()
+                    st.success("Dados do produto atualizados com sucesso!")
+                    st.rerun()
+        else:
+            st.info("Nenhum produto cadastrado no banco de dados.")
+
+# ==========================================
+# 2. MOVIMENTAÇÃO DE ESTOQUE
+# ==========================================
+elif menu == "🔄 Movimentação de Estoque":
+    st.subheader("🔄 Movimentações de Compras & Estoque")
+    st.caption("Registro de compras (entradas) e saídas operacionais.")
+    
+    conn = sqlite3.connect(DB_NAME)
+    produtos_df = pd.read_sql_query("SELECT id, nome, preco_custo, quantidade_estoque FROM produtos", conn)
+    conn.close()
+    
+    if produtos_df.empty:
+        st.warning("Nenhum produto disponível no catálogo. Cadastre produtos antes de realizar movimentações.")
+    else:
+        col1, col2 = st.columns(2)
+        with col1:
+            prod_nome = st.selectbox("Selecione o Produto", produtos_df['nome'].tolist())
+            prod_info = produtos_df[produtos_df['nome'] == prod_nome].iloc[0]
+            st.info(f"**Estoque Atual:** {prod_info['quantidade_estoque']} unidades | **Preço Base:** R$ {prod_info['preco_custo']:.2f}")
+
+        with col2:
+            tipo_mov = st.radio("Tipo de Lançamento", ["ENTRADA (Compra/Aporte)", "SAIDA (Baixa/Consumo)"])
+            quantidade = st.number_input("Quantidade", min_value=1, step=1)
+            preco_unitario = st.number_input("Preço Unitário da Operação (R$)", min_value=0.01, value=float(prod_info['preco_custo']), format="%.2f")
+
+        if st.button("Registrar Operação"):
+            tipo = "ENTRADA" if "ENTRADA" in tipo_mov else "SAIDA"
+            
+            if tipo == "SAIDA" and quantidade > prod_info['quantidade_estoque']:
+                st.error("Operação cancelada: a quantidade solicitada excede o saldo em estoque.")
+            else:
+                conn = sqlite3.connect(DB_NAME)
+                cursor = conn.cursor()
+                
+                cursor.execute("INSERT INTO movimentacoes_estoque (produto_id, tipo, quantidade, preco_unitario) VALUES (?, ?, ?, ?)", (int(prod_info['id']), tipo, quantidade, preco_unitario))
+                
+                nova_qtd = prod_info['quantidade_estoque'] + quantidade if tipo == "ENTRADA" else prod_info['quantidade_estoque'] - quantidade
+                cursor.execute("UPDATE produtos SET quantidade_estoque = ? WHERE id = ?", (nova_qtd, int(prod_info['id'])))
+                
+                conn.commit()
+                conn.close()
+                st.success("Movimentação registrada com sucesso!")
+                st.rerun()
+
+# ==========================================
+# 3. DASHBOARD E RELATÓRIO COMPARATIVO
+# ==========================================
+elif menu == "📊 Dashboard & Relatórios":
+    st.subheader("📊 Painel Comparativo & Exportação PDF")
+    st.caption("Comparação periódica de volume de compras e variações de valor.")
+    
+    conn = sqlite3.connect(DB_NAME)
+    df_mov = pd.read_sql_query("SELECT m.id, p.nome as produto, m.tipo, m.quantidade, m.preco_unitario, strftime('%Y-%m', m.data_movimentacao) as mes_ano FROM movimentacoes_estoque m JOIN produtos p ON p.id = m.produto_id", conn)
+    conn.close()
+
+    if df_mov.empty:
+        st.info("Ainda não há lançamentos registrados para gerar comparativos.")
+    else:
+        meses_disponiveis = sorted(df_mov['mes_ano'].unique(), reverse=True)
+        
+        if len(meses_disponiveis) < 2:
+            st.warning("São necessários lançamentos em pelo menos dois meses diferentes para montar o comparativo de períodos.")
+            st.markdown("### Histórico de Lançamentos:")
+            st.dataframe(df_mov, use_container_width=True)
+        else:
+            col1, col2 = st.columns(2)
+            with col1:
+                mes_atual = st.selectbox("Selecione o Mês Recente (Atual)", meses_disponiveis, index=0)
+            with col2:
+                mes_anterior = st.selectbox("Selecione o Mês Base (Anterior)", meses_disponiveis, index=1 if len(meses_disponiveis) > 1 else 0)
+
+            df_atual = df_mov[df_mov['mes_ano'] == mes_atual].groupby('produto').agg(qtd_atual=('quantidade', 'sum'), preco_atual=('preco_unitario', 'mean')).reset_index()
+            df_ant = df_mov[df_mov['mes_ano'] == mes_anterior].groupby('produto').agg(qtd_ant=('quantidade', 'sum'), preco_ant=('preco_unitario', 'mean')).reset_index()
+
+            df_comp = pd.merge(df_atual, df_ant, on='produto', how='outer').fillna(0)
+            df_comp['Diferença Qtd'] = df_comp['qtd_atual'] - df_comp['qtd_ant']
+            df_comp['Diferença Preço'] = df_comp['preco_atual'] - df_comp['preco_ant']
+
+            df_comp.rename(columns={'produto': 'Produto', 'qtd_ant': f'Qtd ({mes_anterior})', 'qtd_atual': f'Qtd ({mes_atual})', 'preco_ant': f'Preço ({mes_anterior})', 'preco_atual': f'Preço ({mes_atual})'}, inplace=True)
+
+            st.subheader("📌 Indicadores de Variação")
+            m1, m2, m3 = st.columns(3)
+            total_dif_qtd = df_comp['Diferença Qtd'].sum()
+            media_dif_preco = df_comp['Diferença Preço'].mean()
+            
+            m1.metric("Variação de Volume", f"{total_dif_qtd:+} un")
+            m2.metric("Variação Média de Preço", f"R$ {media_dif_preco:+.2f}")
+            m3.metric("Itens Analisados", len(df_comp))
+
+            st.divider()
+            st.subheader("📋 Tabela Analítica")
+            st.dataframe(df_comp, use_container_width=True)
+
+            st.divider()
+            st.subheader("📄 Emissão de Documento Oficial")
+            pdf_data = gerar_pdf_bytes(df_comp, mes_atual, mes_anterior)
+            st.download_button(label="📥 Baixar Relatório Comparativo em PDF", data=pdf_data, file_name=f"relatorio_gestao_compras_{mes_anterior}_vs_{mes_atual}.pdf", mime="application/pdf")
+
+# ==========================================
+# 4. GESTÃO DE USUÁRIOS
+# ==========================================
+elif menu == "👥 Gestão de Usuários":
+    st.subheader("👥 Controle de Acesso e Usuários")
+    st.caption("Gerenciamento de contas e atribuição de permissões no sistema.")
+    
+    with st.form("form_novo_usuario"):
+        st.subheader("Cadastrar Novo Usuário")
+        novo_nome = st.text_input("Nome Completo")
+        novo_username = st.text_input("E-mail / Usuário de Acesso")
+        nova_senha = st.text_input("Senha", type="password")
+        novo_role = st.selectbox("Nível de Permissão", ["operador", "admin"])
+        
+        submit_user = st.form_submit_button("Cadastrar Usuário")
+        if submit_user:
+            if not novo_nome or not novo_username or not nova_senha:
+                st.error("Todos os campos do formulário devem ser preenchidos.")
+            else:
+                try:
+                    conn = sqlite3.connect(DB_NAME)
+                    cursor = conn.cursor()
+                    cursor.execute("INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)", (novo_nome.strip(), novo_username.strip().lower(), hash_password(nova_senha), novo_role))
+                    conn.commit()
+                    conn.close()
+                    st.success(f"Acesso para '{novo_username}' configurado com sucesso!")
+                except sqlite3.IntegrityError:
+                    st.error("O e-mail/usuário informado já está cadastrado no sistema.")
+
+    st.divider()
+    st.subheader("Usuários Ativos")
+    conn = sqlite3.connect(DB_NAME)
+    users_df = pd.read_sql_query("SELECT id, nome, username, role FROM usuarios", conn)
+    conn.close()
+    st.dataframe(users_df, use_container_width=True)
