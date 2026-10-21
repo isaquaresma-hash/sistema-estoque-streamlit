@@ -10,13 +10,64 @@ from reportlab.lib import colors
 import io
 
 # ==========================================
-# CONFIGURAÇÃO DA PÁGINA
+# CONFIGURAÇÃO DA PÁGINA E ESTILOS CSS
 # ==========================================
 st.set_page_config(
     page_title="Gestão de Estoque & Compras",
     page_icon="📦",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
+
+# Customização CSS para deixar a interface bonita e moderna
+CUSTOM_CSS = """
+<style>
+    /* Fundo suave e fontes */
+    .stApp {
+        background-color: #F8F9FA;
+    }
+    
+    /* Card de Login */
+    .login-card {
+        background-color: #FFFFFF;
+        padding: 2.5rem;
+        border-radius: 12px;
+        box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08);
+        border: 1px solid #E9ECEF;
+    }
+    
+    /* Estilização de Títulos */
+    h1, h2, h3 {
+        color: #1E293B;
+        font-weight: 700;
+    }
+    
+    /* Botões Customizados */
+    .stButton>button {
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    .stButton>button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    /* Card do Perfil na Sidebar */
+    .user-profile-card {
+        background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+        color: white;
+        padding: 1rem;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+    .user-profile-card p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+</style>
+"""
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 DB_NAME = "estoque_compras.db"
 
@@ -32,7 +83,6 @@ def init_db():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     
-    # Tabela de Usuários
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS usuarios (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +93,6 @@ def init_db():
         )
     """)
     
-    # Tabela de Produtos
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS produtos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,7 +104,6 @@ def init_db():
         )
     """)
     
-    # Tabela de Movimentações (Compras e Vendas/Baixas)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS movimentacoes_estoque (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -107,19 +155,25 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
 def login_screen():
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 1.5, 1])
+    st.markdown("<br>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns([1, 1.3, 1])
     
     with col2:
-        st.markdown("<h2 style='text-align: center;'>🔒 Acesso ao Sistema</h2>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align: center; color: gray;'>Gestão de Estoque & Compras</p>", unsafe_allow_html=True)
-        st.divider()
+        # Imagem Ilustrativa de Cabeçalho na Tela de Login
+        st.image("https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80", use_container_width=True)
+        
+        st.markdown("""
+            <div class='login-card'>
+                <h2 style='text-align: center; margin-bottom: 0px;'>📦 Portal de Estoque</h2>
+                <p style='text-align: center; color: #64748B; font-size: 0.95rem; margin-bottom: 25px;'>Entre com suas credenciais para acessar o sistema</p>
+            </div>
+        """, unsafe_allow_html=True)
         
         username = st.text_input("E-mail ou Usuário", placeholder="seu.email@fnp.org.br")
         password = st.text_input("Senha", type="password", placeholder="••••••••")
         
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Entrar no Sistema", type="primary", use_container_width=True):
+        if st.button("🔐 Entrar no Sistema", type="primary", use_container_width=True):
             user = verificar_login(username, password)
             if user:
                 st.session_state["usuario_logado"] = {
@@ -146,9 +200,15 @@ if not st.session_state["usuario_logado"]:
 # ==========================================
 user_info = st.session_state["usuario_logado"]
 
-st.sidebar.markdown(f"👤 **Usuário:** {user_info['nome']}")
-st.sidebar.markdown(f"🔑 **Permissão:** {user_info['role'].capitalize()}")
-if st.sidebar.button("🔴 Sair / Logout"):
+# Card de Usuário Personalizado na Sidebar
+st.sidebar.markdown(f"""
+    <div class="user-profile-card">
+        <p style="font-size: 1.1rem; font-weight: bold; color: #F8FAFC;">👤 {user_info['nome']}</p>
+        <p style="color: #94A3B8;">🔑 Permissão: <b>{user_info['role'].capitalize()}</b></p>
+    </div>
+""", unsafe_allow_html=True)
+
+if st.sidebar.button("🚪 Sair do Sistema", use_container_width=True):
     logout()
 
 st.sidebar.divider()
@@ -207,12 +267,12 @@ def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
 
     table = Table(table_data, colWidths=[150, 80, 80, 70, 80, 80])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#F0F2F6')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.black),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E293B')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#DDDDDD')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
     ]))
     
     story.append(table)
@@ -225,6 +285,7 @@ def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
 # ==========================================
 if menu == "📦 Gestão de Produtos":
     st.title("📦 Cadastro e Alteração de Produtos")
+    st.markdown("Gerencie o catálogo de produtos e atualize os preços de custo.")
     
     tab1, tab2 = st.tabs(["➕ Cadastrar Novo Produto", "✏️ Editar Produto / Preço"])
     
@@ -235,7 +296,7 @@ if menu == "📦 Gestão de Produtos":
             preco_custo = st.number_input("Preço de Custo (R$)", min_value=0.01, format="%.2f")
             qtd_inicial = st.number_input("Estoque Inicial", min_value=0, step=1)
             
-            submitted = st.form_submit_button("Salvar Produto")
+            submitted = st.form_submit_button("💾 Salvar Produto", type="primary")
             if submitted:
                 if nome.strip() == "":
                     st.error("O nome do produto é obrigatório!")
@@ -273,7 +334,7 @@ if menu == "📦 Gestão de Produtos":
                 novo_nome = st.text_input("Nome", value=dados_prod['nome'])
                 novo_preco = st.number_input("Preço de Custo (R$)", min_value=0.01, value=float(dados_prod['preco_custo']), format="%.2f")
                 
-                if st.form_submit_button("Atualizar Dados"):
+                if st.form_submit_button("🔄 Atualizar Dados", type="primary"):
                     conn = sqlite3.connect(DB_NAME)
                     cursor = conn.cursor()
                     cursor.execute(
@@ -292,26 +353,27 @@ if menu == "📦 Gestão de Produtos":
 # ==========================================
 elif menu == "🔄 Movimentação de Estoque":
     st.title("🔄 Registro de Entradas e Saídas")
+    st.markdown("Lance compras de fornecedores ou baixas do estoque.")
     
     conn = sqlite3.connect(DB_NAME)
     produtos_df = pd.read_sql_query("SELECT id, nome, preco_custo, quantidade_estoque FROM produtos", conn)
     conn.close()
     
     if produtos_df.empty:
-        st.warning("Nenhum produto cadastrado no sistema. Cadastre produtos antes de registrar movimentações.")
+        st.warning("Nenhum produto cadastrado no sistema.")
     else:
         col1, col2 = st.columns(2)
         with col1:
             prod_nome = st.selectbox("Produto", produtos_df['nome'].tolist())
             prod_info = produtos_df[produtos_df['nome'] == prod_nome].iloc[0]
-            st.info(f"**Estoque Atual:** {prod_info['quantidade_estoque']} un | **Preço Cadastrado:** R$ {prod_info['preco_custo']:.2f}")
+            st.info(f"📌 **Estoque Atual:** {prod_info['quantidade_estoque']} un | **Preço Base:** R$ {prod_info['preco_custo']:.2f}")
 
         with col2:
             tipo_mov = st.radio("Tipo de Movimentação", ["ENTRADA (Compra/Aporte)", "SAIDA (Venda/Baixa)"])
             quantidade = st.number_input("Quantidade", min_value=1, step=1)
             preco_unitario = st.number_input("Preço Unitário Praticado (R$)", min_value=0.01, value=float(prod_info['preco_custo']), format="%.2f")
 
-        if st.button("Registrar Movimentação", type="primary"):
+        if st.button("📥 Confirmar Movimentação", type="primary"):
             tipo = "ENTRADA" if "ENTRADA" in tipo_mov else "SAIDA"
             
             if tipo == "SAIDA" and quantidade > prod_info['quantidade_estoque']:
@@ -337,7 +399,8 @@ elif menu == "🔄 Movimentação de Estoque":
 # 3. DASHBOARD E RELATÓRIO COMPARATIVO
 # ==========================================
 elif menu == "📊 Dashboard & Relatórios":
-    st.title("📊 Comparativo Mês a Mês & Exportação PDF")
+    st.title("📊 Comparativo Mensal & Relatório PDF")
+    st.markdown("Análise comparativa de preços e volumes movimentados de mês a mês.")
     
     conn = sqlite3.connect(DB_NAME)
     df_mov = pd.read_sql_query("""
@@ -350,12 +413,12 @@ elif menu == "📊 Dashboard & Relatórios":
     conn.close()
 
     if df_mov.empty:
-        st.info("Ainda não há movimentações registradas no sistema.")
+        st.info("Ainda não há movimentações registradas para gerar análises.")
     else:
         meses_disponiveis = sorted(df_mov['mes_ano'].unique(), reverse=True)
         
         if len(meses_disponiveis) < 2:
-            st.warning("São necessários dados registrados em pelo menos 2 meses diferentes para realizar a comparação mensal.")
+            st.warning("São necessários dados de pelo menos 2 meses diferentes para realizar a comparação mensal.")
             st.markdown("### Lançamentos Registrados:")
             st.dataframe(df_mov, use_container_width=True)
         else:
@@ -391,7 +454,7 @@ elif menu == "📊 Dashboard & Relatórios":
             }, inplace=True)
 
             # Cards de Métricas
-            st.subheader("📌 Resumo das Variações")
+            st.subheader("📌 Variações no Período")
             m1, m2, m3 = st.columns(3)
             total_dif_qtd = df_comp['Diferença Qtd'].sum()
             media_dif_preco = df_comp['Diferença Preço'].mean()
@@ -402,13 +465,12 @@ elif menu == "📊 Dashboard & Relatórios":
 
             st.divider()
             
-            # Tabela Detalhada
             st.subheader("📋 Tabela Comparativa Detalhada")
             st.dataframe(df_comp, use_container_width=True)
 
             # Botão para Download do PDF
             st.divider()
-            st.subheader("📄 Exportar Relatório em PDF")
+            st.subheader("📄 Exportar Relatório Oficial")
             
             pdf_data = gerar_pdf_bytes(df_comp, mes_atual, mes_anterior)
             
@@ -424,16 +486,17 @@ elif menu == "📊 Dashboard & Relatórios":
 # 4. GESTÃO DE USUÁRIOS (EXCLUSIVO ADMIN)
 # ==========================================
 elif menu == "👥 Gestão de Usuários":
-    st.title("👥 Gerenciamento de Usuários do Sistema")
+    st.title("👥 Gerenciamento de Usuários")
+    st.markdown("Cadastre novos operadores ou administradores para o sistema.")
     
     with st.form("form_novo_usuario"):
         st.subheader("Cadastrar Novo Usuário")
         novo_nome = st.text_input("Nome Completo")
-        novo_username = st.text_input("Nome de Usuário / E-mail")
+        novo_username = st.text_input("E-mail / Nome de Usuário")
         nova_senha = st.text_input("Senha", type="password")
         novo_role = st.selectbox("Nível de Permissão", ["operador", "admin"])
         
-        if st.form_submit_button("Cadastrar Usuário"):
+        if st.form_submit_button("➕ Cadastrar Usuário", type="primary"):
             if not novo_nome or not novo_username or not nova_senha:
                 st.error("Preencha todos os campos do formulário!")
             else:
@@ -446,7 +509,7 @@ elif menu == "👥 Gestão de Usuários":
                     )
                     conn.commit()
                     conn.close()
-                    st.success(f"Usuário '{novo_username}' criado com sucesso!")
+                    st.success(f"Usuário '{novo_username}' cadastrado com sucesso!")
                 except sqlite3.IntegrityError:
                     st.error("Este nome de usuário já está cadastrado.")
 
