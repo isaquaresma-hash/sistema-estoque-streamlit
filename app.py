@@ -27,6 +27,9 @@ st.set_page_config(
 
 DB_NAME = "estoque_compras.db"
 
+def get_db_connection():
+    return sqlite3.connect(DB_NAME, check_same_thread=False, timeout=10)
+
 # ==========================================
 # CARREGAMENTO DE LOGO
 # ==========================================
@@ -155,7 +158,7 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def init_db():
-    with sqlite3.connect(DB_NAME) as conn:
+    with get_db_connection() as conn:
         cursor = conn.cursor()
         
         cursor.execute("""
@@ -321,18 +324,34 @@ def init_db():
 
         conn.commit()
 
-# FORÇA A CRIAÇÃO DAS TABELAS ANTES DE REQUISITAR QUALQUER LOGIN
-init_db()
+# Inicialização resiliente
+try:
+    init_db()
+except Exception:
+    if os.path.exists(DB_NAME):
+        try:
+            os.remove(DB_NAME)
+        except Exception:
+            pass
+    init_db()
 
 # ==========================================
 # AUTENTICAÇÃO E SESSÃO
 # ==========================================
 def verificar_login(username, password):
-    with sqlite3.connect(DB_NAME) as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, nome, role, setor FROM usuarios WHERE username = ? AND senha = ?", 
-                       (username.lower().strip(), hash_password(password)))
-        return cursor.fetchone()
+    try:
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, nome, role, setor FROM usuarios WHERE username = ? AND senha = ?", 
+                           (username.lower().strip(), hash_password(password)))
+            return cursor.fetchone()
+    except sqlite3.OperationalError:
+        init_db()
+        with get_db_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id, nome, role, setor FROM usuarios WHERE username = ? AND senha = ?", 
+                           (username.lower().strip(), hash_password(password)))
+            return cursor.fetchone()
 
 if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
@@ -382,119 +401,4 @@ if not st.session_state["usuario_logado"]:
 # UTILITÁRIOS DE EXPORTAÇÃO
 # ==========================================
 def gerar_excel_estilizado_bytes(df_exportar, nome_aba="Relatório"):
-    buffer = BytesIO()
-    with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-        df_exportar.to_excel(writer, index=False, sheet_name=nome_aba)
-        worksheet = writer.sheets[nome_aba]
-        
-        header_fill = PatternFill(start_color="0F172A", end_color="0F172A", fill_type="solid")
-        header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-        thin_border = Border(bottom=Side(style='thin', color='E0E0E0'), left=Side(style='thin', color='F0F0F0'), right=Side(style='thin', color='F0F0F0'))
-        
-        for col_num, col_name in enumerate(df_exportar.columns, 1):
-            col_letter = get_column_letter(col_num)
-            cell = worksheet.cell(row=1, column=col_num)
-            cell.fill = header_fill
-            cell.font = header_font
-            cell.alignment = Alignment(horizontal="center", vertical="center")
-            
-            is_moeda = any(term in str(col_name).lower() for term in ["preço", "custo", "valor", "total"])
-            
-            for row_num in range(2, len(df_exportar) + 2):
-                data_cell = worksheet.cell(row=row_num, column=col_num)
-                data_cell.border = thin_border
-                val = data_cell.value
-                if isinstance(val, (int, float)):
-                    if is_moeda:
-                        data_cell.number_format = 'R$ #,##0.00'
-                        data_cell.alignment = Alignment(horizontal="right", vertical="center")
-                    else:
-                        data_cell.alignment = Alignment(horizontal="center", vertical="center")
-                else:
-                    data_cell.alignment = Alignment(horizontal="left", vertical="center")
-
-            max_len = max(len(str(col_name)), max([len(str(worksheet.cell(row=r, column=col_num).value or '')) for r in range(2, len(df_exportar) + 2)], default=0))
-            worksheet.column_dimensions[col_letter].width = max(max_len + 4, 12)
-            
-    return buffer.getvalue()
-
-def gerar_pdf_generic_bytes(titulo, df_dados):
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20)
-    story = []
-    
-    styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=12, alignment=1, spaceAfter=8, textColor=colors.HexColor('#0F172A'))
-    sub_style = ParagraphStyle('SubStyle', parent=styles['Normal'], fontSize=8, alignment=2, textColor=colors.gray)
-    cell_style = ParagraphStyle('CellStyle', parent=styles['Normal'], fontSize=7)
-    cell_bold = ParagraphStyle('CellBold', parent=styles['Normal'], fontSize=7, fontName='Helvetica-Bold', textColor=colors.white)
-
-    story.append(Paragraph(f"<b>{titulo.upper()}</b>", title_style))
-    story.append(Paragraph(f"Emissão: {datetime.now().strftime('%d/%m/%Y %H:%M')}", sub_style))
-    story.append(Spacer(1, 10))
-
-    headers = [Paragraph(f"<b>{col}</b>", cell_bold) for col in df_dados.columns]
-    table_data = [headers]
-
-    for _, row in df_dados.iterrows():
-        linha = [Paragraph(str(val), cell_style) for val in row.values]
-        table_data.append(linha)
-
-    col_widths = [int(540 / len(df_dados.columns))] * len(df_dados.columns)
-    table = Table(table_data, colWidths=col_widths)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0F172A')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
-    ]))
-    
-    story.append(table)
-    doc.build(story)
-    buffer.seek(0)
-    return buffer.getvalue()
-
-# ==========================================
-# NAVEGAÇÃO LATERAL (8 MÓDULOS)
-# ==========================================
-user_info = st.session_state["usuario_logado"]
-
-st.sidebar.markdown(f"""
-<div class='user-profile-card'>
-    <p style='font-size: 0.95rem; font-weight: 700;'>👤 {user_info['nome']}</p>
-    <p style='font-size: 0.8rem; opacity: 0.9;'>Setor: <b>{user_info['setor']}</b></p>
-    <p style='font-size: 0.8rem; opacity: 0.9;'>Perfil: <b>{user_info['role'].upper()}</b></p>
-</div>
-""", unsafe_allow_html=True)
-
-if st.sidebar.button("🚪 Encerrar Sessão", use_container_width=True):
-    logout()
-
-st.sidebar.divider()
-
-menu_map = {
-    "01. Painel de Controle": "01. Painel de Controle",
-    "02. Requisições de Compra": "02. Requisições de Compra",
-    "03. Gestão de Compras": "03. Gestão de Compras",
-    "04. Controle de Estoque": "04. Controle de Estoque",
-    "05. Catálogo de Materiais": "05. Catálogo de Materiais",
-    "06. Fornecedores": "06. Fornecedores",
-    "07. Documentos & Entregas": "07. Documentos & Entregas",
-    "08. Relatórios e Indicadores": "08. Relatórios e Indicadores"
-}
-
-if user_info["role"] == "admin":
-    menu_map["👥 Gestão de Usuários"] = "👥 Gestão de Usuários"
-
-menu_opcao = st.sidebar.radio("Navegação do Sistema", list(menu_map.keys()), index=4)
-
-# ==========================================
-# 05. CATÁLOGO DE MATERIAIS
-# ==========================================
-if menu_opcao == "05. Catálogo de Materiais":
-    
-    if "modo_material" not in st.session_state:
-        st.session_state["modo_material"] = "lista"
-    if "material_edicao"
+    buffer
