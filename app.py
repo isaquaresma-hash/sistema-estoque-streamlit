@@ -37,10 +37,10 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
 # ==========================================
-# ESTILIZAÇÃO CSS (ESTILO VERTICAL COMPACTO)
+# ESTILIZAÇÃO CSS (COMPACTO E CONTROLADO)
 # ==========================================
 if not st.session_state["usuario_logado"]:
-    # CSS exclusivo da Tela de Login (Vertical, Pequeno e Fixado no Centro)
+    # CSS exclusivo da Tela de Login (Compacto, Limpo e Proporcional)
     css_code = """<style>
         header[data-testid="stHeader"] {
             display: none !important;
@@ -63,31 +63,31 @@ if not st.session_state["usuario_logado"]:
 
         .login-wrapper {
             width: 100%;
-            max-width: 400px;
+            max-width: 380px;
             margin: auto;
             padding: 1rem;
         }
 
         .login-wrapper div[data-testid='stForm'] {
             background-color: #FFFFFF !important;
-            padding: 2rem 1.8rem 1.6rem 1.8rem !important;
-            border-radius: 18px !important;
+            padding: 1.8rem 1.5rem 1.5rem 1.5rem !important;
+            border-radius: 16px !important;
             border: 1px solid #E2E8F0 !important;
-            box-shadow: 0 10px 30px rgba(0, 33, 113, 0.08) !important;
+            box-shadow: 0 8px 24px rgba(0, 33, 113, 0.08) !important;
             width: 100% !important;
         }
 
         .login-logo-img {
-            max-width: 230px;
-            width: 100%;
-            height: auto;
-            display: block;
-            margin: 0 auto 1rem auto;
+            max-width: 180px !important;
+            width: 100% !important;
+            height: auto !important;
+            display: block !important;
+            margin: 0 auto 1rem auto !important;
         }
 
         .login-welcome-title {
             color: #0D1B2A;
-            font-size: 1.3rem;
+            font-size: 1.25rem;
             font-weight: 800;
             margin: 0 0 0.2rem 0;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -97,7 +97,7 @@ if not st.session_state["usuario_logado"]:
         .login-welcome-sub {
             color: #64748B;
             font-size: 0.85rem;
-            margin-bottom: 1.2rem;
+            margin-bottom: 1rem;
             font-weight: 500;
             text-align: center;
         }
@@ -108,7 +108,7 @@ if not st.session_state["usuario_logado"]:
             font-weight: 700 !important;
             border-radius: 8px !important;
             border: none !important;
-            padding: 0.65rem 1rem !important;
+            padding: 0.6rem 1rem !important;
             margin-top: 0.5rem !important;
             width: 100% !important;
         }
