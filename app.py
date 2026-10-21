@@ -10,60 +10,88 @@ from reportlab.lib import colors
 import io
 
 # ==========================================
-# CONFIGURAÇÃO DA PÁGINA E ESTILOS CSS
+# CONFIGURAÇÃO DA PÁGINA E ESTILOS INSTITUCIONAIS
 # ==========================================
 st.set_page_config(
-    page_title="Gestão de Estoque & Compras",
-    page_icon="📦",
+    page_title="Sistema de Gestão de Estoque e Compras",
+    page_icon="🏢",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Customização CSS para deixar a interface bonita e moderna
+# Customização CSS para ambiente corporativo / institucional
 CUSTOM_CSS = """
 <style>
-    /* Fundo suave e fontes */
+    /* Fundo geral em tom neutro e sóbrio */
     .stApp {
-        background-color: #F8F9FA;
+        background-color: #F8FAFC;
     }
     
-    /* Card de Login */
-    .login-card {
+    /* Container central da tela de login */
+    .login-container {
         background-color: #FFFFFF;
-        padding: 2.5rem;
+        padding: 3rem 2.5rem;
         border-radius: 12px;
-        box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.08);
-        border: 1px solid #E9ECEF;
+        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+        border: 1px solid #E2E8F0;
+        margin-top: 2rem;
     }
     
-    /* Estilização de Títulos */
-    h1, h2, h3 {
-        color: #1E293B;
+    /* Cabeçalho Institucional de Login */
+    .brand-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .brand-logo-icon {
+        font-size: 2.5rem;
+        background-color: #EFF6FF;
+        width: 65px;
+        height: 65px;
+        line-height: 65px;
+        border-radius: 50%;
+        margin: 0 auto 1rem auto;
+        border: 1px solid #DBEAFE;
+    }
+    .brand-title {
+        color: #0F172A;
+        font-size: 1.35rem;
         font-weight: 700;
+        letter-spacing: -0.02em;
+        margin: 0;
+    }
+    .brand-subtitle {
+        color: #64748B;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
     }
     
-    /* Botões Customizados */
+    /* Botões Primários Estilizados */
     .stButton>button {
-        border-radius: 8px;
+        background-color: #2563EB;
+        color: white;
+        border-radius: 6px;
         font-weight: 600;
-        transition: all 0.3s ease;
+        padding: 0.5rem 1rem;
+        border: none;
+        transition: background-color 0.2s ease, transform 0.1s ease;
     }
     .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        background-color: #1D4ED8;
+        transform: translateY(-1px);
     }
     
     /* Card do Perfil na Sidebar */
     .user-profile-card {
-        background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+        background: #0F172A;
         color: white;
         padding: 1rem;
-        border-radius: 10px;
-        margin-bottom: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid #2563EB;
     }
     .user-profile-card p {
         margin: 0;
-        font-size: 0.9rem;
+        font-size: 0.875rem;
     }
 </style>
 """
@@ -155,36 +183,37 @@ if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
 def login_screen():
-    st.markdown("<br>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns([1, 1.3, 1])
+    col1, col2, col3 = st.columns([1, 1.2, 1])
     
     with col2:
-        # Imagem Ilustrativa de Cabeçalho na Tela de Login
-        st.image("https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80", use_container_width=True)
-        
         st.markdown("""
-            <div class='login-card'>
-                <h2 style='text-align: center; margin-bottom: 0px;'>📦 Portal de Estoque</h2>
-                <p style='text-align: center; color: #64748B; font-size: 0.95rem; margin-bottom: 25px;'>Entre com suas credenciais para acessar o sistema</p>
+            <div class='login-container'>
+                <div class='brand-header'>
+                    <div class='brand-logo-icon'>🏢</div>
+                    <h1 class='brand-title'>Portal de Compras & Estoque</h1>
+                    <p class='brand-subtitle'>Acesso Restrito - Identifique-se para continuar</p>
+                </div>
             </div>
         """, unsafe_allow_html=True)
         
-        username = st.text_input("E-mail ou Usuário", placeholder="seu.email@fnp.org.br")
-        password = st.text_input("Senha", type="password", placeholder="••••••••")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🔐 Entrar no Sistema", type="primary", use_container_width=True):
-            user = verificar_login(username, password)
-            if user:
-                st.session_state["usuario_logado"] = {
-                    "id": user[0],
-                    "nome": user[1],
-                    "role": user[2]
-                }
-                st.success(f"Bem-vindo(a), {user[1]}!")
-                st.rerun()
-            else:
-                st.error("Usuário ou senha incorretos.")
+        with st.form("login_form"):
+            username = st.text_input("E-mail corporativo / Usuário", placeholder="usuario@fnp.org.br")
+            password = st.text_input("Senha de acesso", type="password", placeholder="••••••••")
+            st.markdown("<br>", unsafe_allow_html=True)
+            submit_login = st.form_submit_button("Entrar no Sistema", use_container_width=True)
+            
+            if submit_login:
+                user = verificar_login(username, password)
+                if user:
+                    st.session_state["usuario_logado"] = {
+                        "id": user[0],
+                        "nome": user[1],
+                        "role": user[2]
+                    }
+                    st.success(f"Autenticado com sucesso. Bem-vindo(a), {user[1]}!")
+                    st.rerun()
+                else:
+                    st.error("Credenciais inválidas. Verifique o usuário e a senha fornecidos.")
 
 def logout():
     st.session_state["usuario_logado"] = None
@@ -200,15 +229,15 @@ if not st.session_state["usuario_logado"]:
 # ==========================================
 user_info = st.session_state["usuario_logado"]
 
-# Card de Usuário Personalizado na Sidebar
+# Painel de Identificação do Usuário na Lateral
 st.sidebar.markdown(f"""
     <div class="user-profile-card">
-        <p style="font-size: 1.1rem; font-weight: bold; color: #F8FAFC;">👤 {user_info['nome']}</p>
-        <p style="color: #94A3B8;">🔑 Permissão: <b>{user_info['role'].capitalize()}</b></p>
+        <p style="font-size: 0.95rem; font-weight: 700; color: #F8FAFC;">{user_info['nome']}</p>
+        <p style="color: #94A3B8; font-size: 0.8rem; margin-top: 2px;">Perfil: <b>{user_info['role'].upper()}</b></p>
     </div>
 """, unsafe_allow_html=True)
 
-if st.sidebar.button("🚪 Sair do Sistema", use_container_width=True):
+if st.sidebar.button("🚪 Encerrar Sessão", use_container_width=True):
     logout()
 
 st.sidebar.divider()
@@ -218,7 +247,7 @@ if user_info["role"] == "admin":
     menu_options.insert(0, "📦 Gestão de Produtos")
     menu_options.append("👥 Gestão de Usuários")
 
-menu = st.sidebar.radio("Navegação", menu_options)
+menu = st.sidebar.radio("Navegação do Sistema", menu_options)
 
 # ==========================================
 # GERADOR DE RELATÓRIO PDF (REPORTLAB)
@@ -229,13 +258,13 @@ def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
     story = []
     
     styles = getSampleStyleSheet()
-    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=16, alignment=1, spaceAfter=10)
+    title_style = ParagraphStyle('TitleStyle', parent=styles['Heading1'], fontSize=15, alignment=1, spaceAfter=8)
     sub_style = ParagraphStyle('SubStyle', parent=styles['Normal'], fontSize=9, alignment=2, textColor=colors.gray)
     cell_style = ParagraphStyle('CellStyle', parent=styles['Normal'], fontSize=8)
-    cell_bold = ParagraphStyle('CellBold', parent=styles['Normal'], fontSize=8, fontName='Helvetica-Bold')
+    cell_bold = ParagraphStyle('CellBold', parent=styles['Normal'], fontSize=8, fontName='Helvetica-Bold', textColor=colors.white)
 
-    story.append(Paragraph("<b>Relatório Comparativo Mensal - Estoque & Compras</b>", title_style))
-    story.append(Paragraph(f"Período Comparado: {mes_anterior} vs {mes_atual} | Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}", sub_style))
+    story.append(Paragraph("<b>RELATÓRIO COMPARATIVO MENSAL - ESTOQUE & COMPRAS</b>", title_style))
+    story.append(Paragraph(f"Período Analisado: {mes_anterior} vs {mes_atual} | Emissão: {datetime.now().strftime('%d/%m/%Y %H:%M')}", sub_style))
     story.append(Spacer(1, 15))
 
     headers = [
@@ -267,12 +296,12 @@ def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
 
     table = Table(table_data, colWidths=[150, 80, 80, 70, 80, 80])
     table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1E293B')),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0F172A')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#CBD5E1')),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
     ]))
     
     story.append(table)
@@ -284,22 +313,22 @@ def gerar_pdf_bytes(df_comparativo, mes_atual, mes_anterior):
 # 1. GESTÃO DE PRODUTOS (EXCLUSIVO ADMIN)
 # ==========================================
 if menu == "📦 Gestão de Produtos":
-    st.title("📦 Cadastro e Alteração de Produtos")
-    st.markdown("Gerencie o catálogo de produtos e atualize os preços de custo.")
+    st.title("📦 Gestão de Produtos")
+    st.caption("Cadastro do catálogo de produtos e atualização do custo base.")
     
-    tab1, tab2 = st.tabs(["➕ Cadastrar Novo Produto", "✏️ Editar Produto / Preço"])
+    tab1, tab2 = st.tabs(["➕ Cadastrar Novo Produto", "✏️ Editar Produto / Valor"])
     
     with tab1:
         with st.form("form_cadastro"):
             nome = st.text_input("Nome do Produto")
-            codigo = st.text_input("Código de Barras (Opcional)")
+            codigo = st.text_input("Código / Referência (Opcional)")
             preco_custo = st.number_input("Preço de Custo (R$)", min_value=0.01, format="%.2f")
             qtd_inicial = st.number_input("Estoque Inicial", min_value=0, step=1)
             
-            submitted = st.form_submit_button("💾 Salvar Produto", type="primary")
+            submitted = st.form_submit_button("Salvar Produto")
             if submitted:
                 if nome.strip() == "":
-                    st.error("O nome do produto é obrigatório!")
+                    st.error("O campo 'Nome do Produto' é obrigatório.")
                 else:
                     try:
                         conn = sqlite3.connect(DB_NAME)
@@ -319,7 +348,7 @@ if menu == "📦 Gestão de Produtos":
                         conn.close()
                         st.success(f"Produto '{nome}' cadastrado com sucesso!")
                     except sqlite3.IntegrityError:
-                        st.error("Já existe um produto cadastrado com este nome.")
+                        st.error("Já existe um produto registrado com este nome.")
 
     with tab2:
         conn = sqlite3.connect(DB_NAME)
@@ -327,14 +356,14 @@ if menu == "📦 Gestão de Produtos":
         conn.close()
         
         if not produtos_df.empty:
-            prod_selecionado = st.selectbox("Selecione o Produto para Alterar", produtos_df['nome'].tolist())
+            prod_selecionado = st.selectbox("Selecione o Produto para Alteração", produtos_df['nome'].tolist())
             dados_prod = produtos_df[produtos_df['nome'] == prod_selecionado].iloc[0]
             
             with st.form("form_editar"):
                 novo_nome = st.text_input("Nome", value=dados_prod['nome'])
                 novo_preco = st.number_input("Preço de Custo (R$)", min_value=0.01, value=float(dados_prod['preco_custo']), format="%.2f")
                 
-                if st.form_submit_button("🔄 Atualizar Dados", type="primary"):
+                if st.form_submit_button("Atualizar Informações"):
                     conn = sqlite3.connect(DB_NAME)
                     cursor = conn.cursor()
                     cursor.execute(
@@ -343,41 +372,41 @@ if menu == "📦 Gestão de Produtos":
                     )
                     conn.commit()
                     conn.close()
-                    st.success("Produto atualizado com sucesso!")
+                    st.success("Dados do produto atualizados com sucesso!")
                     st.rerun()
         else:
-            st.info("Nenhum produto cadastrado ainda.")
+            st.info("Nenhum produto cadastrado no banco de dados.")
 
 # ==========================================
 # 2. MOVIMENTAÇÃO DE ESTOQUE
 # ==========================================
 elif menu == "🔄 Movimentação de Estoque":
-    st.title("🔄 Registro de Entradas e Saídas")
-    st.markdown("Lance compras de fornecedores ou baixas do estoque.")
+    st.title("🔄 Movimentações de Estoque")
+    st.caption("Registro de compras (entradas) e saídas operacionais.")
     
     conn = sqlite3.connect(DB_NAME)
     produtos_df = pd.read_sql_query("SELECT id, nome, preco_custo, quantidade_estoque FROM produtos", conn)
     conn.close()
     
     if produtos_df.empty:
-        st.warning("Nenhum produto cadastrado no sistema.")
+        st.warning("Nenhum produto disponível no catálogo. Cadastre produtos antes de realizar movimentações.")
     else:
         col1, col2 = st.columns(2)
         with col1:
-            prod_nome = st.selectbox("Produto", produtos_df['nome'].tolist())
+            prod_nome = st.selectbox("Selecione o Produto", produtos_df['nome'].tolist())
             prod_info = produtos_df[produtos_df['nome'] == prod_nome].iloc[0]
-            st.info(f"📌 **Estoque Atual:** {prod_info['quantidade_estoque']} un | **Preço Base:** R$ {prod_info['preco_custo']:.2f}")
+            st.info(f"**Estoque Atual:** {prod_info['quantidade_estoque']} unidades | **Preço de Custo Base:** R$ {prod_info['preco_custo']:.2f}")
 
         with col2:
-            tipo_mov = st.radio("Tipo de Movimentação", ["ENTRADA (Compra/Aporte)", "SAIDA (Venda/Baixa)"])
+            tipo_mov = st.radio("Tipo de Lançamento", ["ENTRADA (Compra/Aporte)", "SAIDA (Baixa/Consumo)"])
             quantidade = st.number_input("Quantidade", min_value=1, step=1)
-            preco_unitario = st.number_input("Preço Unitário Praticado (R$)", min_value=0.01, value=float(prod_info['preco_custo']), format="%.2f")
+            preco_unitario = st.number_input("Preço Unitário da Operação (R$)", min_value=0.01, value=float(prod_info['preco_custo']), format="%.2f")
 
-        if st.button("📥 Confirmar Movimentação", type="primary"):
+        if st.button("Registrar Operação"):
             tipo = "ENTRADA" if "ENTRADA" in tipo_mov else "SAIDA"
             
             if tipo == "SAIDA" and quantidade > prod_info['quantidade_estoque']:
-                st.error("Quantidade de saída maior do que o estoque disponível!")
+                st.error("Operação cancelada: a quantidade solicitada excede o saldo em estoque.")
             else:
                 conn = sqlite3.connect(DB_NAME)
                 cursor = conn.cursor()
@@ -399,8 +428,8 @@ elif menu == "🔄 Movimentação de Estoque":
 # 3. DASHBOARD E RELATÓRIO COMPARATIVO
 # ==========================================
 elif menu == "📊 Dashboard & Relatórios":
-    st.title("📊 Comparativo Mensal & Relatório PDF")
-    st.markdown("Análise comparativa de preços e volumes movimentados de mês a mês.")
+    st.title("📊 Painel Comparativo & Exportação")
+    st.caption("Comparação periódica de volume movimentado e variações de preço de custo.")
     
     conn = sqlite3.connect(DB_NAME)
     df_mov = pd.read_sql_query("""
@@ -413,20 +442,20 @@ elif menu == "📊 Dashboard & Relatórios":
     conn.close()
 
     if df_mov.empty:
-        st.info("Ainda não há movimentações registradas para gerar análises.")
+        st.info("Ainda não há lançamentos registrados para gerar comparativos.")
     else:
         meses_disponiveis = sorted(df_mov['mes_ano'].unique(), reverse=True)
         
         if len(meses_disponiveis) < 2:
-            st.warning("São necessários dados de pelo menos 2 meses diferentes para realizar a comparação mensal.")
-            st.markdown("### Lançamentos Registrados:")
+            st.warning("São necessários lançamentos em pelo menos dois meses diferentes para montar o comparativo de períodos.")
+            st.markdown("### Histórico de Lançamentos:")
             st.dataframe(df_mov, use_container_width=True)
         else:
             col1, col2 = st.columns(2)
             with col1:
-                mes_atual = st.selectbox("Selecione o Mês Atual", meses_disponiveis, index=0)
+                mes_atual = st.selectbox("Selecione o Mês Recente (Atual)", meses_disponiveis, index=0)
             with col2:
-                mes_anterior = st.selectbox("Selecione o Mês de Comparação", meses_disponiveis, index=1 if len(meses_disponiveis) > 1 else 0)
+                mes_anterior = st.selectbox("Selecione o Mês Base (Anterior)", meses_disponiveis, index=1 if len(meses_disponiveis) > 1 else 0)
 
             # Agregação Mês Atual
             df_atual = df_mov[df_mov['mes_ano'] == mes_atual].groupby('produto').agg(
@@ -454,23 +483,23 @@ elif menu == "📊 Dashboard & Relatórios":
             }, inplace=True)
 
             # Cards de Métricas
-            st.subheader("📌 Variações no Período")
+            st.subheader("📌 Indicadores de Variação")
             m1, m2, m3 = st.columns(3)
             total_dif_qtd = df_comp['Diferença Qtd'].sum()
             media_dif_preco = df_comp['Diferença Preço'].mean()
             
-            m1.metric("Variação Total de Volume", f"{total_dif_qtd:+} un")
+            m1.metric("Variação de Volume", f"{total_dif_qtd:+} un")
             m2.metric("Variação Média de Preço", f"R$ {media_dif_preco:+.2f}")
-            m3.metric("Produtos Analisados", len(df_comp))
+            m3.metric("Itens Analisados", len(df_comp))
 
             st.divider()
             
-            st.subheader("📋 Tabela Comparativa Detalhada")
+            st.subheader("📋 Tabela Analítica")
             st.dataframe(df_comp, use_container_width=True)
 
-            # Botão para Download do PDF
+            # Exportação
             st.divider()
-            st.subheader("📄 Exportar Relatório Oficial")
+            st.subheader("📄 Emissão de Documento Oficial")
             
             pdf_data = gerar_pdf_bytes(df_comp, mes_atual, mes_anterior)
             
@@ -478,27 +507,26 @@ elif menu == "📊 Dashboard & Relatórios":
                 label="📥 Baixar Relatório Comparativo em PDF",
                 data=pdf_data,
                 file_name=f"relatorio_comparativo_{mes_anterior}_vs_{mes_atual}.pdf",
-                mime="application/pdf",
-                type="primary"
+                mime="application/pdf"
             )
 
 # ==========================================
 # 4. GESTÃO DE USUÁRIOS (EXCLUSIVO ADMIN)
 # ==========================================
 elif menu == "👥 Gestão de Usuários":
-    st.title("👥 Gerenciamento de Usuários")
-    st.markdown("Cadastre novos operadores ou administradores para o sistema.")
+    st.title("👥 Controle de Acesso e Usuários")
+    st.caption("Gerenciamento de contas e atribuição de níveis de permissão.")
     
     with st.form("form_novo_usuario"):
         st.subheader("Cadastrar Novo Usuário")
         novo_nome = st.text_input("Nome Completo")
-        novo_username = st.text_input("E-mail / Nome de Usuário")
+        novo_username = st.text_input("E-mail corporativo / Identificador")
         nova_senha = st.text_input("Senha", type="password")
         novo_role = st.selectbox("Nível de Permissão", ["operador", "admin"])
         
-        if st.form_submit_button("➕ Cadastrar Usuário", type="primary"):
+        if st.form_submit_button("Cadastrar Usuário"):
             if not novo_nome or not novo_username or not nova_senha:
-                st.error("Preencha todos os campos do formulário!")
+                st.error("Todos os campos do formulário devem ser preenchidos.")
             else:
                 try:
                     conn = sqlite3.connect(DB_NAME)
@@ -509,12 +537,12 @@ elif menu == "👥 Gestão de Usuários":
                     )
                     conn.commit()
                     conn.close()
-                    st.success(f"Usuário '{novo_username}' cadastrado com sucesso!")
+                    st.success(f"Acesso para '{novo_username}' configurado com sucesso!")
                 except sqlite3.IntegrityError:
-                    st.error("Este nome de usuário já está cadastrado.")
+                    st.error("O identificador/e-mail informado já está cadastrado no sistema.")
 
     st.divider()
-    st.subheader("Usuários Cadastrados")
+    st.subheader("Usuários Ativos no Sistema")
     conn = sqlite3.connect(DB_NAME)
     users_df = pd.read_sql_query("SELECT id, nome, username, role FROM usuarios", conn)
     conn.close()
