@@ -36,19 +36,25 @@ img_base64 = get_base64_of_bin_file(img_name)
 bg_image_css = ""
 if img_base64:
     bg_image_css = f"""
-    .main .block-container {{
-        background: url('data:image/png;base64,{img_base64}') no-repeat center center fixed;
-        background-size: 65% auto;
-        border-radius: 16px;
+    [data-testid="stAppViewContainer"] {{
+        background: url('data:image/png;base64,{img_base64}') no-repeat center center fixed !important;
+        background-size: 55% auto !important;
+        background-color: #F0F4F9 !important;
     }}
+    .main .block-container {{
+        background-color: rgba(240, 244, 249, 0.85) !important;
+        border-radius: 16px;
+        padding: 2rem !important;
+    }}
+    """
+else:
+    bg_image_css = """
+    [data-testid="stAppViewContainer"] {
+        background-color: #F0F4F9 !important;
+    }
     """
 
 css_code = f"""<style>
-    .stApp {{
-        background-color: #F4F7FC !important;
-    }}
-    
-    /* Fundo suave com o logo em tom claro na área de conteúdo */
     {bg_image_css}
 
     /* Sidebar */
@@ -124,13 +130,12 @@ css_code = f"""<style>
         z-index: 2;
     }}
 
-    /* Estilização para cartões internos (mantém leitura fácil dos campos) */
+    /* Estilização para formulários internos pós-login */
     div[data-testid='stForm'] {{
-        background-color: rgba(255, 255, 255, 0.92) !important;
+        background-color: rgba(255, 255, 255, 0.95) !important;
         border-radius: 16px !important;
         border: 1px solid #E2E8F0 !important;
         box-shadow: 0 4px 12px rgba(0,0,0,0.03) !important;
-        backdrop-filter: blur(4px);
     }}
 
     .user-profile-card {{
@@ -362,49 +367,4 @@ if menu == "📦 Gestão de Produtos":
             
             with st.form("form_editar"):
                 novo_nome = st.text_input("Nome", value=dados_prod['nome'])
-                novo_preco = st.number_input("Preço de Custo (R$)", min_value=0.01, value=float(dados_prod['preco_custo']), format="%.2f")
-                
-                if st.form_submit_button("Atualizar Informações"):
-                    conn = sqlite3.connect(DB_NAME)
-                    cursor = conn.cursor()
-                    cursor.execute("UPDATE produtos SET nome = ?, preco_custo = ? WHERE id = ?", (novo_nome, novo_preco, int(dados_prod['id'])))
-                    conn.commit()
-                    conn.close()
-                    st.success("Dados do produto atualizados com sucesso!")
-                    st.rerun()
-        else:
-            st.info("Nenhum produto cadastrado no banco de dados.")
-
-# ==========================================
-# 2. MOVIMENTAÇÃO DE ESTOQUE
-# ==========================================
-elif menu == "🔄 Movimentação de Estoque":
-    st.subheader("🔄 Movimentações de Compras & Estoque")
-    st.caption("Registro de compras (entradas) e saídas operacionais.")
-    
-    conn = sqlite3.connect(DB_NAME)
-    produtos_df = pd.read_sql_query("SELECT id, nome, preco_custo, quantidade_estoque FROM produtos", conn)
-    conn.close()
-    
-    if produtos_df.empty:
-        st.warning("Nenhum produto disponível no catálogo. Cadastre produtos antes de realizar movimentações.")
-    else:
-        col1, col2 = st.columns(2)
-        with col1:
-            prod_nome = st.selectbox("Selecione o Produto", produtos_df['nome'].tolist())
-            prod_info = produtos_df[produtos_df['nome'] == prod_nome].iloc[0]
-            st.info(f"**Estoque Atual:** {prod_info['quantidade_estoque']} unidades | **Preço Base:** R$ {prod_info['preco_custo']:.2f}")
-
-        with col2:
-            tipo_mov = st.radio("Tipo de Lançamento", ["ENTRADA (Compra/Aporte)", "SAIDA (Baixa/Consumo)"])
-            quantidade = st.number_input("Quantidade", min_value=1, step=1)
-            preco_unitario = st.number_input("Preço Unitário da Operação (R$)", min_value=0.01, value=float(prod_info['preco_custo']), format="%.2f")
-
-        if st.button("Registrar Operação"):
-            tipo = "ENTRADA" if "ENTRADA" in tipo_mov else "SAIDA"
-            
-            if tipo == "SAIDA" and quantidade > prod_info['quantidade_estoque']:
-                st.error("Operação cancelada: a quantidade solicitada excede o saldo em estoque.")
-            else:
-                conn = sqlite3.connect(DB_NAME)
-                cursor = conn.cursor()
+                novo_preco = st.number_input("Preço de
