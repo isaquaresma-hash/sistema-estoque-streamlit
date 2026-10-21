@@ -69,55 +69,23 @@ css_code = """<style>
         display: none !important;
     }
 
-    /* Container de Login centralizado e expandido */
-    .login-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 2rem;
-    }
-
-    /* Cartão de LOGIN expandido */
-    .login-container div[data-testid='stForm'] {
-        background-color: #FFFFFF !important;
-        padding: 2.5rem 2.5rem 2rem 2.5rem !important;
-        border-radius: 20px !important;
-        border: 1px solid #E2E8F0 !important;
-        position: relative !important;
-        overflow: hidden !important;
-        box-shadow: 0 12px 35px rgba(0, 33, 113, 0.09) !important;
-        width: 100% !important;
-    }
-
-    .login-logo-img {
-        max-width: 320px;
-        width: 100%;
-        height: auto;
-        display: block;
-        margin: 0 auto 1.2rem auto;
-    }
-
-    .login-welcome-title {
-        color: #0D1B2A;
-        font-size: 1.5rem;
-        font-weight: 800;
-        margin: 0 0 0.2rem 0;
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    .login-welcome-sub {
-        color: #64748B;
-        font-size: 0.92rem;
-        margin-bottom: 1.5rem;
-        font-weight: 500;
-    }
-
+    /* Formatação de Formulários e Login */
     div[data-testid='stForm'] {
         background-color: #FFFFFF !important;
         border-radius: 16px !important;
         border: 1px solid #E2E8F0 !important;
-        padding: 1.8rem !important;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+        padding: 2rem !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08) !important;
+    }
+
+    div[data-testid='stForm'] input {
+        color: #1E293B !important;
+        background-color: #FFFFFF !important;
+    }
+
+    div[data-testid='stForm'] label {
+        color: #0F172A !important;
+        font-weight: 600 !important;
     }
 
     div[data-testid='stForm'] button[kind='secondaryFormSubmit'] {
@@ -193,15 +161,14 @@ def login_screen():
     col1, col2, col3 = st.columns([0.8, 1.4, 0.8])
     
     with col2:
-        st.markdown("<div class='login-container'>", unsafe_allow_html=True)
         with st.form("login_form"):
             if img_base64:
-                st.markdown(f"<img src='data:image/png;base64,{img_base64}' class='login-logo-img' alt='Logo FNP'>", unsafe_allow_html=True)
+                st.markdown(f"<img src='data:image/png;base64,{img_base64}' style='max-width:280px; width:100%; display:block; margin:0 auto 1rem auto;'>", unsafe_allow_html=True)
             else:
                 st.markdown("<h3 style='text-align:center; color:#0D47A1; margin-bottom:1rem;'>SISTEMA DE GESTÃO DE COMPRAS E ESTOQUE</h3>", unsafe_allow_html=True)
                 
-            st.markdown("<p class='login-welcome-title'>Bem-vindo(a)!</p>", unsafe_allow_html=True)
-            st.markdown("<p class='login-welcome-sub'>Faça login para acessar o sistema.</p>", unsafe_allow_html=True)
+            st.markdown("<h3 style='color:#0D1B2A; margin-bottom:0.2rem;'>Bem-vindo(a)!</h3>", unsafe_allow_html=True)
+            st.markdown("<p style='color:#64748B; font-size:0.9rem; margin-bottom:1.5rem;'>Faça login para acessar o sistema.</p>", unsafe_allow_html=True)
             
             username = st.text_input("✉️ E-mail ou Usuário", placeholder="usuario@fnp.org.br")
             password = st.text_input("🔒 Senha", type="password", placeholder="••••••••")
@@ -222,8 +189,7 @@ def login_screen():
                 else:
                     st.error("Credenciais inválidas. Verifique o usuário e a senha fornecidos.")
             
-            st.markdown("<p class='secure-footer' style='text-align:center; color:#94A3B8; font-size:0.8rem; margin-top:1rem;'>🔒 Acesso seguro</p>", unsafe_allow_html=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align:center; color:#94A3B8; font-size:0.8rem; margin-top:1rem;'>🔒 Acesso seguro</p>", unsafe_allow_html=True)
 
 def logout():
     st.session_state["usuario_logado"] = None
@@ -253,23 +219,18 @@ if user_info["role"] == "admin":
 menu = st.sidebar.radio("Navegação do Sistema", menu_options)
 
 # ==========================================
-# FUNÇÃO DE EXPORTAÇÃO EXCEL
+# FUNÇÕES DE EXPORTAÇÃO EXCEL E PDF
 # ==========================================
 def gerar_excel_estilizado_bytes(df_exportar, nome_aba="Relatório"):
-    """Gera o arquivo Excel em memória utilizando tom Azul (#0D47A1)."""
     buffer = BytesIO()
-    
     with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
         df_exportar.to_excel(writer, index=False, sheet_name=nome_aba)
-        
         workbook = writer.book
         worksheet = writer.sheets[nome_aba]
         
-        # Cabeçalho em Tom Azul Escuro (#0D47A1) com Texto Branco em Negrito
         header_fill = PatternFill(start_color="0D47A1", end_color="0D47A1", fill_type="solid")
         header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
         
-        # Estilo das bordas das células
         thin_border = Border(
             bottom=Side(style='thin', color='E0E0E0'),
             left=Side(style='thin', color='F0F0F0'),
@@ -286,8 +247,6 @@ def gerar_excel_estilizado_bytes(df_exportar, nome_aba="Relatório"):
             cell.alignment = Alignment(horizontal="center", vertical="center")
             
             nome_col_lower = str(col_name).lower()
-            
-            # Identificação de campos com moeda
             is_moeda = ("preço" in nome_col_lower or "custo" in nome_col_lower or "valor" in nome_col_lower or "diferença preço" in nome_col_lower)
             
             for row_num in range(2, len(df_exportar) + 2):
@@ -304,7 +263,6 @@ def gerar_excel_estilizado_bytes(df_exportar, nome_aba="Relatório"):
                 else:
                     data_cell.alignment = Alignment(horizontal="left", vertical="center")
 
-            # Largura automática das colunas
             max_len = max(
                 len(str(col_name)),
                 max([len(str(worksheet.cell(row=r, column=col_num).value or '')) for r in range(2, len(df_exportar) + 2)], default=0)
@@ -480,7 +438,14 @@ elif menu == "📊 Dashboard & Relatórios":
     st.caption("Comparação periódica de volume de compras e variações de valor.")
     
     with sqlite3.connect(DB_NAME) as conn:
-        df_mov = pd.read_sql_query("SELECT m.id as ID, p.nome as Produto, m.tipo as Tipo, m.quantidade as Quantidade, m.preco_unitario as Preço_Unitario, strftime('%Y-%m', m.data_movimentacao) as Mes_Ano FROM movimentacoes_estoque m JOIN produtos p ON p.id = m.produto_id", conn)
+        df_mov = pd.read_sql_query(
+            "SELECT m.id as ID, m.produto_id, p.nome as Produto, m.tipo as Tipo, "
+            "m.quantidade as Quantidade, m.preco_unitario as Preço_Unitario, "
+            "strftime('%Y-%m', m.data_movimentacao) as Mes_Ano "
+            "FROM movimentacoes_estoque m "
+            "JOIN produtos p ON p.id = m.produto_id "
+            "ORDER BY m.id DESC", conn
+        )
 
     if df_mov.empty:
         st.info("Ainda não há lançamentos registrados para gerar comparativos.")
@@ -490,107 +455,17 @@ elif menu == "📊 Dashboard & Relatórios":
         if len(meses_disponiveis) < 2:
             st.warning("São necessários lançamentos em pelo menos dois meses diferentes para montar o comparativo de períodos.")
             st.markdown("### Histórico de Lançamentos:")
-            st.dataframe(df_mov, use_container_width=True)
             
-            excel_historico = gerar_excel_estilizado_bytes(df_mov, nome_aba="Histórico")
-            st.download_button(
-                label="📥 Baixar Histórico Geral (.xlsx)",
-                data=excel_historico,
-                file_name=f"historico_movimentacoes_{datetime.now().strftime('%Y_%m_%d')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
-        else:
-            col1, col2 = st.columns(2)
-            with col1:
-                mes_atual = st.selectbox("Selecione o Mês Recente (Atual)", meses_disponiveis, index=0)
-            with col2:
-                mes_anterior = st.selectbox("Selecione o Mês Base (Anterior)", meses_disponiveis, index=1 if len(meses_disponiveis) > 1 else 0)
-
-            df_atual = df_mov[df_mov['Mes_Ano'] == mes_atual].groupby('Produto').agg(qtd_atual=('Quantidade', 'sum'), preco_atual=('Preço_Unitario', 'mean')).reset_index()
-            df_ant = df_mov[df_mov['Mes_Ano'] == mes_anterior].groupby('Produto').agg(qtd_ant=('Quantidade', 'sum'), preco_ant=('Preço_Unitario', 'mean')).reset_index()
-
-            df_comp = pd.merge(df_atual, df_ant, on='Produto', how='outer').fillna(0)
-            df_comp['Diferença Qtd'] = df_comp['qtd_atual'] - df_comp['qtd_ant']
-            df_comp['Diferença Preço'] = df_comp['preco_atual'] - df_comp['preco_ant']
-
-            df_comp.rename(columns={
-                'qtd_ant': f'Qtd ({mes_anterior})', 
-                'qtd_atual': f'Qtd ({mes_atual})', 
-                'preco_ant': f'Preço ({mes_anterior})', 
-                'preco_atual': f'Preço ({mes_atual})'
-            }, inplace=True)
-
-            st.subheader("📌 Indicadores de Variação")
-            m1, m2, m3 = st.columns(3)
-            total_dif_qtd = df_comp['Diferença Qtd'].sum()
-            media_dif_preco = df_comp['Diferença Preço'].mean()
-            
-            m1.metric("Variação de Volume", f"{total_dif_qtd:+} un")
-            m2.metric("Variação Média de Preço", f"R$ {media_dif_preco:+.2f}")
-            m3.metric("Itens Analisados", len(df_comp))
-
+            # Cabeçalho da Tabela com Lixeira
+            h1, h2, h3, h4, h5, h6, h7 = st.columns([0.6, 2, 1.2, 1, 1.3, 1.2, 0.8])
+            h1.markdown("**ID**")
+            h2.markdown("**Produto**")
+            h3.markdown("**Tipo**")
+            h4.markdown("**Qtd**")
+            h5.markdown("**Preço Unit.**")
+            h6.markdown("**Mês/Ano**")
+            h7.markdown("**Ação**")
             st.divider()
-            st.subheader("📋 Tabela Analítica")
-            st.dataframe(df_comp, use_container_width=True)
 
-            st.divider()
-            st.subheader("📄 Emissão de Documentos e Planilhas")
-            
-            exp_col1, exp_col2 = st.columns(2)
-            
-            with exp_col1:
-                excel_comparativo = gerar_excel_estilizado_bytes(df_comp, nome_aba="Relatório Comparativo")
-                st.download_button(
-                    label="📊 Baixar Planilha Formatada (.xlsx)",
-                    data=excel_comparativo,
-                    file_name=f"relatorio_estoque_{mes_anterior}_vs_{mes_atual}.xlsx",
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    use_container_width=True
-                )
-            
-            with exp_col2:
-                pdf_data = gerar_pdf_bytes(df_comp, mes_atual, mes_anterior)
-                st.download_button(
-                    label="📄 Baixar Relatório em PDF",
-                    data=pdf_data,
-                    file_name=f"relatorio_gestao_compras_{mes_anterior}_vs_{mes_atual}.pdf",
-                    mime="application/pdf",
-                    use_container_width=True
-                )
-
-# ==========================================
-# 4. GESTÃO DE USUÁRIOS
-# ==========================================
-elif menu == "👥 Gestão de Usuários":
-    st.subheader("👥 Controle de Acesso e Usuários")
-    st.caption("Gerenciamento de contas e atribuição de permissões no sistema.")
-    
-    with st.form("form_novo_usuario"):
-        st.subheader("Cadastrar Novo Usuário")
-        c1, c2 = st.columns(2)
-        with c1:
-            novo_nome = st.text_input("Nome Completo")
-            nova_senha = st.text_input("Senha", type="password")
-        with c2:
-            novo_username = st.text_input("E-mail / Usuário de Acesso")
-            novo_role = st.selectbox("Nível de Permissão", ["operador", "admin"])
-        
-        submit_user = st.form_submit_button("👤 Cadastrar Usuário")
-        if submit_user:
-            if not novo_nome or not novo_username or not nova_senha:
-                st.error("Todos os campos do formulário devem ser preenchidos.")
-            else:
-                try:
-                    with sqlite3.connect(DB_NAME) as conn:
-                        cursor = conn.cursor()
-                        cursor.execute("INSERT INTO usuarios (nome, username, senha, role) VALUES (?, ?, ?, ?)", (novo_nome.strip(), novo_username.strip().lower(), hash_password(nova_senha), novo_role))
-                        conn.commit()
-                    st.success(f"Acesso para '{novo_username}' configurado com sucesso!")
-                except sqlite3.IntegrityError:
-                    st.error("O e-mail/usuário informado já está cadastrado no sistema.")
-
-    st.divider()
-    st.subheader("Usuários Ativos")
-    with sqlite3.connect(DB_NAME) as conn:
-        users_df = pd.read_sql_query("SELECT id, nome, username, role FROM usuarios", conn)
-    st.dataframe(users_df, use_container_width=True)
+            for idx, row in df_mov.iterrows():
+                c1, c2, c3, c4
